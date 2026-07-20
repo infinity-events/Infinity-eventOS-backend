@@ -148,50 +148,46 @@ include:{
 
 }
 
-async register(dto:RegisterWristbandDto){
+async register(dto: RegisterWristbandDto) {
+
+    const existing = await this.prisma.wristband.findUnique({
+        where: {
+            uid: dto.uid
+        }
+    });
 
 
-const existing =
-await this.prisma.wristband.findUnique({
- where:{
-  id:dto.uid
- }
-})
+    if (existing) {
+
+        throw new Error(
+            "Braccialetto già registrato"
+        );
+
+    }
 
 
-if(existing){
+    console.log("REGISTER UID:", dto.uid);
 
- throw new Error(
-  "Braccialetto già registrato"
- )
 
-}
+    return this.prisma.wristband.create({
 
-console.log("REGISTER UID:", dto.uid);
+        data: {
 
-const activationCode =
-Math.random()
-.toString(36)
-.substring(2,8)
-.toUpperCase()
+            uid: dto.uid,
 
-return this.prisma.wristband.create({
+            code: `WB-${Math.random()
+                .toString(36)
+                .substring(2,8)
+                .toUpperCase()}`,
 
-data:{
+            activationCode: `ACT-${Math.random()
+                .toString(36)
+                .substring(2,8)
+                .toUpperCase()}`
 
- code: `WB-${Math.random()
-    .toString(36)
-    .substring(2,8)
-    .toUpperCase()}`,
+        }
 
- id:dto.uid,
-
- activationCode
-
-}
-
-})
-
+    });
 
 }
 

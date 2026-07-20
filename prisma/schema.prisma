@@ -72,6 +72,8 @@ enum TicketStatus {
 model Wristband {
   id String @id @default(uuid())
 
+  uid String? @unique
+
   code String @unique
 
   activationCode String @unique
