@@ -1,0 +1,183 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Festival {
+  id String @id @default(uuid())
+
+  name String
+
+  location String
+
+  startDate DateTime
+
+  endDate DateTime
+
+  tickets Ticket[]
+
+  wristbands Wristband[]
+}
+
+model Ticket {
+  id String @id @default(uuid())
+
+  code String @unique
+
+  type TicketType @default(STANDARD)
+
+  price Float
+
+  status TicketStatus @default(GENERATED)
+
+  createdAt DateTime @default(now())
+
+  festivalId String
+
+  festival Festival @relation(fields: [festivalId], references: [id])
+
+  userId String?
+
+  user User? @relation(fields: [userId], references: [id])
+
+  wristband Wristband?
+}
+
+enum TicketType {
+  STANDARD
+
+  VIP
+
+  STAFF
+}
+
+enum TicketStatus {
+  GENERATED
+
+  ACTIVATED
+
+  USED
+
+  CANCELLED
+}
+
+model Wristband {
+  id String @id @default(uuid())
+
+  code String @unique
+
+  activationCode String @unique
+
+  activated Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  festivalId String?
+
+  festival Festival? @relation(fields: [festivalId], references: [id])
+
+  ticketId String? @unique
+
+  ticket Ticket? @relation(fields: [ticketId], references: [id])
+
+  userId String?
+
+  user User? @relation(fields: [userId], references: [id])
+}
+
+enum WristbandStatus {
+  CREATED
+
+  SHIPPED
+
+  ACTIVATED
+
+  BLOCKED
+}
+
+model User {
+  id String @id @default(uuid())
+
+  email String @unique
+
+  firstName String
+
+  lastName String
+
+  role Role @default(CUSTOMER)
+
+  createdAt DateTime @default(now())
+
+  tickets Ticket[]
+
+  wristbands Wristband[]
+
+  wallet Wallet?
+}
+
+enum Role {
+  CUSTOMER
+
+  STAFF
+
+  SECURITY
+
+  CASHIER
+
+  ADMIN
+
+  OWNER
+}
+
+model Wallet {
+
+  id String @id @default(uuid())
+
+  balance Float @default(0)
+
+  userId String @unique
+
+  user User @relation(fields:[userId],references:[id])
+
+  transactions Transaction[]
+
+}
+
+
+model Transaction {
+
+  id String @id @default(uuid())
+
+  amount Float
+
+  type TransactionType
+
+  description String?
+
+  createdAt DateTime @default(now())
+
+
+  walletId String
+
+  wallet Wallet @relation(fields:[walletId],references:[id])
+
+}
+
+
+enum TransactionType {
+
+  TOPUP
+
+  PURCHASE
+
+  REFUND
+
+}
