@@ -64,7 +64,7 @@ async activate(dto: ActivateWristbandDto, firebaseUid:string){
 const wristband = await this.prisma.wristband.findUnique({
 
 where:{
-    code:dto.code
+    activationCode:dto.activationCode
 }
 
 });
