@@ -133,7 +133,7 @@ async findByCode(code:string){
 return this.prisma.wristband.findUnique({
 
 where:{
-    code
+    activationCode:code
 },
 
 include:{
