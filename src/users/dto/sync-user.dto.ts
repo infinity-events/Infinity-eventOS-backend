@@ -1,6 +1,6 @@
-export class CreateUserDto {
+export class SyncUserDto {
 
-    firebaseUid!:string;
+    firebaseUid!: string;
 
     email!: string;
 

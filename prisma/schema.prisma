@@ -106,6 +106,8 @@ enum WristbandStatus {
 model User {
   id String @id @default(uuid())
 
+  firebaseUid String @unique
+
   email String @unique
 
   firstName String

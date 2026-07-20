@@ -3,6 +3,8 @@ import { WristbandsService } from './wristbands.service';
 import { CreateWristbandDto } from './dto/create-wristband.dto';
 import { ActivateWristbandDto } from './dto/activate-wristband.dto';
 import { RegisterWristbandDto } from './dto/register-wristband.dto';
+import { Req, UseGuards } from '@nestjs/common';
+import { FirebaseAuthGuard } from '../auth/firebase-auth.guard';
 
 
 
@@ -34,11 +36,16 @@ create(
 }
 
 @Post('activate')
+@UseGuards(FirebaseAuthGuard)
 activate(
+ @Req() req,
  @Body() dto:ActivateWristbandDto
 ){
 
- return this.service.activate(dto);
+ return this.service.activate(
+    dto,
+    req.user.uid
+ );
 
 }
 

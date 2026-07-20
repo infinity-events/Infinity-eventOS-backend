@@ -59,8 +59,7 @@ create(dto: CreateWristbandDto){
 
 }
 
-async activate(dto: ActivateWristbandDto){
-
+async activate(dto: ActivateWristbandDto, firebaseUid:string){
 
 const wristband = await this.prisma.wristband.findUnique({
 
@@ -70,11 +69,11 @@ where:{
 
 });
 
-console.log("USER ID RICEVUTO:", dto.userId);
+console.log("USER ID RICEVUTO:", firebaseUid);
 
 const user = await this.prisma.user.findUnique({
   where:{
-    id:dto.userId
+    firebaseUid
   }
 });
 
@@ -117,7 +116,7 @@ data:{
 
     user:{
         connect:{
-            id:dto.userId
+            firebaseUid
         }
     }
 

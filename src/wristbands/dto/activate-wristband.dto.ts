@@ -4,6 +4,4 @@ export class ActivateWristbandDto {
 
     activationCode!: string;
 
-    userId!: string;
-
 }
