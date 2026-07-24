@@ -62,16 +62,68 @@ data:tickets
 
 }
 
+findAll(festivalId:string){
 
-findAll(){
+return this.prisma.ticket.findMany({
 
-    return this.prisma.ticket.findMany({
-        include:{
-            user:true,
-            festival:true,
-            wristband:true
-        }
-    });
+where:{
+festivalId
+},
+
+include:{
+user:true,
+wristband:true
+}
+
+});
+
+}
+
+async stats(festivalId:string){
+
+const tickets=await this.prisma.ticket.findMany({
+
+where:{
+festivalId
+}
+
+});
+
+
+const grouped={};
+
+
+tickets.forEach(ticket=>{
+
+if(!grouped[ticket.type]){
+
+grouped[ticket.type]={
+quantity:0,
+revenue:0
+};
+
+}
+
+
+grouped[ticket.type].quantity++;
+
+grouped[ticket.type].revenue+=ticket.price;
+
+});
+
+
+return {
+
+total:tickets.length,
+
+revenue:tickets.reduce(
+(sum,t)=>sum+t.price,
+0
+),
+
+categories:grouped
+
+};
 
 }
 
