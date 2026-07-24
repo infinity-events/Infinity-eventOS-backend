@@ -1,7 +1,11 @@
 export class CreateTicketDto {
 
-    festivalId!: string;
+festivalId!:string;
 
-    userId?: string;
+type!:string;
+
+price!:number;
+
+userId?:string;
 
 }
