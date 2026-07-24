@@ -20,9 +20,9 @@ export class FestivalsService {
 
         location: dto.location,
 
-        startDate: dto.startDate,
-
-        endDate: dto.endDate,
+        startDate:new Date(dto.startDate),
+        
+        endDate:new Date(dto.endDate),
 
       }
     });
