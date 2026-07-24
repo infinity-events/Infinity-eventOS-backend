@@ -6,6 +6,8 @@ type!:string;
 
 price!:number;
 
+quantity!:number;
+
 userId?:string;
 
 }

@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateTicketDto } from './dto/create-ticket.dto';
-import {TicketType, TicketStatus} from '@prisma/client';
+import {Prisma, TicketType, TicketStatus} from '@prisma/client';
 
 
 @Injectable()
@@ -31,37 +31,32 @@ private generateTicketCode(){
 }
 
 
-
-
 create(dto:CreateTicketDto){
 
-return this.prisma.ticket.create({
+const tickets:Prisma.TicketCreateManyInput[]=[];
 
-data:{
+for(let i=0;i<dto.quantity;i++){
+
+tickets.push({
 
 code:this.generateTicketCode(),
 
-type:(dto.type as TicketType) || TicketType.STANDARD,
+type:(dto.type as TicketType)||TicketType.STANDARD,
 
 price:dto.price,
 
 status:TicketStatus.GENERATED,
 
-festival:{
-connect:{
-id:dto.festivalId
-}
-},
+festivalId:dto.festivalId
 
-user:dto.userId
-?{
-connect:{
-id:dto.userId
-}
-}
-:undefined
+});
 
 }
+
+
+return this.prisma.ticket.createMany({
+
+data:tickets
 
 });
 
