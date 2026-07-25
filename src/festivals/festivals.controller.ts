@@ -1,7 +1,6 @@
-import { Controller, Post, Body, Get, Param } from '@nestjs/common';
+import { Controller, Post, Body, Get, Param, Patch } from '@nestjs/common';
 import { FestivalsService } from './festivals.service';
 import { CreateFestivalDto } from './dto/create-festival.dto';
-import { Patch } from '@nestjs/common';
 
 
 @Controller('festivals')
