@@ -25,6 +25,8 @@ model Festival {
   tickets Ticket[]
 
   wristbands Wristband[]
+
+  transactions Transaction[]
 }
 
 model Ticket {
@@ -93,6 +95,8 @@ model Wristband {
   userId String?
 
   user User? @relation(fields: [userId], references: [id])
+
+  transactions Transaction[]
 }
 
 enum WristbandStatus {
@@ -125,6 +129,8 @@ model User {
   wristbands Wristband[]
 
   wallet Wallet?
+
+  operatorTransactions Transaction[] @relation("OperatorTransactions")
 }
 
 enum Role {
@@ -156,32 +162,30 @@ model Wallet {
 }
 
 
-model Transaction {
+model Transaction{
+id String @id @default(cuid())
+amount Float
+type TransactionType
+description String?
+createdAt DateTime @default(now())
 
-  id String @id @default(uuid())
+walletId String
+wallet Wallet @relation(fields:[walletId],references:[id])
 
-  amount Float
+festivalId String
+festival Festival @relation(fields:[festivalId],references:[id])
 
-  type TransactionType
+wristbandId String?
+wristband Wristband? @relation(fields:[wristbandId],references:[id])
 
-  description String?
-
-  createdAt DateTime @default(now())
-
-
-  walletId String
-
-  wallet Wallet @relation(fields:[walletId],references:[id])
-
+operatorId String?
+operator User? @relation("OperatorTransactions",fields:[operatorId],references:[id])
 }
 
 
-enum TransactionType {
-
-  TOPUP
-
-  PURCHASE
-
-  REFUND
-
+enum TransactionType{
+TOPUP
+PURCHASE
+REFUND
+TRANSFER
 }
