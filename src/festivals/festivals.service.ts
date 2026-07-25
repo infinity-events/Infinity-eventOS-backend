@@ -36,4 +36,24 @@ export class FestivalsService {
 
   }
 
+  async update(id:string,dto:any){
+
+    return this.prisma.festival.update({
+
+    where:{
+    id
+    },
+
+    data:{
+
+    name:dto.name,
+    location:dto.location,
+    status:dto.status
+
+    }
+
+    });
+
+  }
+
 }

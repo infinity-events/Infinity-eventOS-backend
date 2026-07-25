@@ -1,6 +1,7 @@
-import { Controller, Post, Body, Get } from '@nestjs/common';
+import { Controller, Post, Body, Get, Param } from '@nestjs/common';
 import { FestivalsService } from './festivals.service';
 import { CreateFestivalDto } from './dto/create-festival.dto';
+import { Patch } from '@nestjs/common';
 
 
 @Controller('festivals')
@@ -26,6 +27,16 @@ export class FestivalsController {
   findAll(){
 
     return this.festivalsService.findAll();
+
+  }
+
+  @Patch(':id')
+    update(
+    @Param('id') id:string,
+    @Body() dto:any
+    ){
+
+    return this.festivalsService.update(id,dto);
 
   }
 
