@@ -148,44 +148,40 @@ enum Role {
 }
 
 model Wallet {
-
   id String @id @default(uuid())
 
   balance Float @default(0)
 
   userId String @unique
 
-  user User @relation(fields:[userId],references:[id])
+  user User @relation(fields: [userId], references: [id])
 
   transactions Transaction[]
-
 }
 
+model Transaction {
+  id          String          @id @default(cuid())
+  amount      Float
+  type        TransactionType
+  description String?
+  createdAt   DateTime        @default(now())
 
-model Transaction{
-id String @id @default(cuid())
-amount Float
-type TransactionType
-description String?
-createdAt DateTime @default(now())
+  walletId String
+  wallet   Wallet @relation(fields: [walletId], references: [id])
 
-walletId String
-wallet Wallet @relation(fields:[walletId],references:[id])
+  festivalId String?
+  festival   Festival? @relation(fields: [festivalId], references: [id])
 
-festivalId String
-festival Festival @relation(fields:[festivalId],references:[id])
+  wristbandId String?
+  wristband   Wristband? @relation(fields: [wristbandId], references: [id])
 
-wristbandId String?
-wristband Wristband? @relation(fields:[wristbandId],references:[id])
-
-operatorId String?
-operator User? @relation("OperatorTransactions",fields:[operatorId],references:[id])
+  operatorId String?
+  operator   User?   @relation("OperatorTransactions", fields: [operatorId], references: [id])
 }
 
-
-enum TransactionType{
-TOPUP
-PURCHASE
-REFUND
-TRANSFER
+enum TransactionType {
+  TOPUP
+  PURCHASE
+  REFUND
+  TRANSFER
 }

@@ -4,4 +4,5 @@ export class TopupWalletDto {
 
     amount!: number;
 
+    wristbandCode!:string;
 }

@@ -11,25 +11,38 @@ constructor(private prisma:PrismaService){}
 
 async topup(dto:TopupWalletDto){
 
-const wallet=await this.prisma.wallet.findUnique({
-where:{userId:dto.userId}
+const wristband=await this.prisma.wristband.findUnique({
+where:{code:dto.wristbandCode},
+include:{
+user:{
+include:{
+wallet:true
+}
+}
+}
 });
 
-if(!wallet)throw new Error("Wallet non trovato");
+if(!wristband)throw new Error("Bracciale non trovato");
+
+if(!wristband.user?.wallet)throw new Error("Wallet non trovato");
+
+const wallet=wristband.user.wallet;
 
 return this.prisma.wallet.update({
 where:{id:wallet.id},
 data:{
-balance:{increment:dto.amount},
+balance:{
+increment:dto.amount
+},
 transactions:{
 create:{
 amount:dto.amount,
 type:"TOPUP",
-description:"Ricarica wallet"
+description:"Ricarica wallet",
+wristbandId:wristband.id
 }
 }
-},
-include:{transactions:true}
+}
 });
 
 }
