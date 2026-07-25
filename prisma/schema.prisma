@@ -27,6 +27,14 @@ model Festival {
   wristbands Wristband[]
 
   transactions Transaction[]
+  
+  status FestivalStatus @default(BOZZA)
+}
+
+enum FestivalStatus {
+BOZZA
+ATTIVO
+CHIUSO
 }
 
 model Ticket {
