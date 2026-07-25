@@ -166,4 +166,30 @@ spent
 
 }
 
+async transactions(userId:string){
+
+const wallet=await this.prisma.wallet.findUnique({
+where:{
+userId
+}
+});
+
+if(!wallet){
+throw new Error("Wallet non trovato");
+}
+return this.prisma.transaction.findMany({
+where:{
+walletId:wallet.id
+},
+
+orderBy:{
+createdAt:"desc"
+},
+
+take:50
+
+});
+
+}
+
 }

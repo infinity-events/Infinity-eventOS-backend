@@ -6,7 +6,7 @@ import { TicketsModule } from './tickets/tickets.module';
 import { WristbandsModule } from './wristbands/wristbands.module';
 import { WalletsModule } from './wallets/wallets.module';
 import { AuthModule } from './auth/auth.module';
-
+import { AnalyticsModule } from './analytics/analytics.module';
 
 
 @Module({
@@ -19,7 +19,8 @@ import { AuthModule } from './auth/auth.module';
     TicketsModule,
     WristbandsModule,
     WalletsModule,
-    AuthModule
+    AuthModule,
+    AnalyticsModule
   ],
 })
 export class AppModule {}

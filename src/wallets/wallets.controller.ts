@@ -1,9 +1,8 @@
-import { Controller, Post, Body } from '@nestjs/common';
+import { Controller, Post, Body, Get, Param } from '@nestjs/common';
 import { WalletsService } from './wallets.service';
 import { TopupWalletDto } from './dto/topup-wallet.dto';
 import { PayWristbandDto } from './dto/pay-wristband.dto';
 import { PayDto } from './dto/pay.dto';
-import {Get,Param} from '@nestjs/common';
 
 
 @Controller('wallet')
@@ -56,5 +55,14 @@ export class WalletsController {
   ){
     return this.walletsService.stats(festivalId);
   }
+
+  @Get('transactions/:userId')
+transactions(
+@Param('userId') userId:string
+){
+
+return this.walletsService.transactions(userId);
+
+}
 
 }
