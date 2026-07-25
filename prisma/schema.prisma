@@ -56,7 +56,7 @@ enum TicketType {
 
   VIP
 
-  STAFF
+  BACKSTAGE
 }
 
 enum TicketStatus {
