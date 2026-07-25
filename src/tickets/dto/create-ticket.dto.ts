@@ -1,12 +1,14 @@
+import {TicketType} from "@prisma/client";
+
 export class CreateTicketDto {
 
 festivalId!:string;
 
-type!:string;
+type!:TicketType;
 
 price!:number;
 
-quantity!:number;
+quantity?:number;
 
 userId?:string;
 

@@ -1,195 +1,252 @@
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { CreateWristbandDto } from './dto/create-wristband.dto';
-import { ActivateWristbandDto } from './dto/activate-wristband.dto';
-import { RegisterWristbandDto } from './dto/register-wristband.dto';
-
+import {Injectable} from '@nestjs/common';
+import {PrismaService} from '../prisma/prisma.service';
+import {CreateWristbandDto} from './dto/create-wristband.dto';
+import {ActivateWristbandDto} from './dto/activate-wristband.dto';
+import {RegisterWristbandDto} from './dto/register-wristband.dto';
 
 @Injectable()
-export class WristbandsService {
-
+export class WristbandsService{
 
 constructor(
- private prisma:PrismaService
+private prisma:PrismaService
 ){}
-
-
 
 generateCode(prefix:string){
 
- return prefix + "-" +
- Math.random()
- .toString(36)
- .substring(2,8)
- .toUpperCase();
+return prefix+"-"+Math.random()
+.toString(36)
+.substring(2,8)
+.toUpperCase();
 
 }
 
 
+create(dto:CreateWristbandDto){
 
-create(dto: CreateWristbandDto){
+return this.prisma.wristband.create({
 
- return this.prisma.wristband.create({
+data:{
 
-  data:{
+code:this.generateCode("WB"),
 
-   code:this.generateCode("WB"),
+activationCode:this.generateCode("ACT"),
 
-   activationCode:this.generateCode("ACT"),
+activated:false,
 
-   activated:false,
+ticket:{
+connect:{
+id:dto.ticketId
+}
+},
 
-
-   ticket:{
-    connect:{
-     id:dto.ticketId
-    }
-   },
-
-
-   festival:{
-    connect:{
-     id:dto.festivalId
-    }
-   }
-
-  }
-
- })
+festival:{
+connect:{
+id:dto.festivalId
+}
+}
 
 }
 
-async activate(dto: ActivateWristbandDto, firebaseUid:string){
+});
 
-const wristband = await this.prisma.wristband.findUnique({
+}
+
+
+async activate(
+dto:ActivateWristbandDto,
+firebaseUid:string
+){
+
+const wristband=await this.prisma.wristband.findUnique({
 
 where:{
-    activationCode:dto.activationCode
+activationCode:dto.activationCode
 }
 
 });
 
-console.log("USER ID RICEVUTO:", firebaseUid);
-
-const user = await this.prisma.user.findUnique({
-  where:{
-    firebaseUid
-  }
-});
-
-console.log("USER TROVATO:", user);
 
 if(!wristband){
 
-    throw new Error("Bracciale non trovato");
+throw new Error("Bracciale non trovato");
 
 }
-
-
-
-if(wristband.activationCode !== dto.activationCode){
-
-    throw new Error("Codice di attivazione errato");
-
-}
-
 
 
 if(wristband.activated){
 
-    throw new Error("Bracciale già attivato");
+throw new Error("Bracciale già attivato");
 
 }
 
+
+const user=await this.prisma.user.findUnique({
+
+where:{
+firebaseUid
+}
+
+});
+
+
+if(!user){
+
+throw new Error("Utente non trovato");
+
+}
 
 
 return this.prisma.wristband.update({
 
 where:{
-    id:wristband.id
+id:wristband.id
 },
-
 
 data:{
 
-    activated:true,
+activated:true,
 
-    user:{
-        connect:{
-            firebaseUid
-        }
-    }
+user:{
+connect:{
+id:user.id
+}
+}
 
 }
 
 });
 
-
 }
+
 
 async findByCode(code:string){
 
 return this.prisma.wristband.findUnique({
 
 where:{
-    activationCode:code
+activationCode:code
 },
 
 include:{
-    user:{
-        include:{
-            wallet:true
-        }
-    },
-    ticket:true
+
+user:{
+include:{
+wallet:true
+}
+},
+
+ticket:true,
+
+festival:true
+
 }
 
 });
 
 }
 
-async register(dto: RegisterWristbandDto) {
-
-    const existing = await this.prisma.wristband.findUnique({
-        where: {
-            uid: dto.uid
-        }
-    });
 
 
-    if (existing) {
+async register(dto:RegisterWristbandDto){
 
-        throw new Error(
-            "Braccialetto già registrato"
-        );
+const existing=await this.prisma.wristband.findUnique({
 
-    }
+where:{
+uid:dto.uid
+}
+
+});
 
 
-    console.log("REGISTER UID:", dto.uid);
+if(existing){
+
+throw new Error("Braccialetto già registrato");
+
+}
 
 
-    return this.prisma.wristband.create({
+return this.prisma.wristband.create({
 
-        data: {
+data:{
 
-            uid: dto.uid,
+uid:dto.uid,
 
-            code: `WB-${Math.random()
-                .toString(36)
-                .substring(2,8)
-                .toUpperCase()}`,
+code:this.generateCode("WB"),
 
-            activationCode: `ACT-${Math.random()
-                .toString(36)
-                .substring(2,8)
-                .toUpperCase()}`
+activationCode:this.generateCode("ACT"),
 
-        }
+activated:false,
 
-    });
-
+festival:{
+connect:{
+id:dto.festivalId
+}
 }
 
 }
 
+});
+
+}
+
+
+
+async findByFestival(festivalId:string){
+
+return this.prisma.wristband.findMany({
+
+where:{
+festivalId
+},
+
+include:{
+
+user:true,
+
+ticket:true,
+
+festival:true
+
+}
+
+});
+
+}
+
+
+
+async stats(festivalId:string){
+
+const total=await this.prisma.wristband.count({
+
+where:{
+festivalId
+}
+
+});
+
+
+const activated=await this.prisma.wristband.count({
+
+where:{
+festivalId,
+activated:true
+}
+
+});
+
+
+return{
+
+total,
+
+activated,
+
+notActivated:total-activated
+
+};
+
+}
+
+
+}

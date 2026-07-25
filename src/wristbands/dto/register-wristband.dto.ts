@@ -1,5 +1,4 @@
-export class RegisterWristbandDto {
-
-    uid!:string;
-
+export class RegisterWristbandDto{
+uid!:string;
+festivalId!:string;
 }

@@ -30,34 +30,26 @@ private generateTicketCode(){
 
 }
 
+async create(dto:CreateTicketDto){
 
-create(dto:CreateTicketDto){
+const quantity=dto.quantity ?? 1;
 
 const tickets:Prisma.TicketCreateManyInput[]=[];
 
-for(let i=0;i<dto.quantity;i++){
+for(let i=0;i<quantity;i++){
 
 tickets.push({
-
 code:this.generateTicketCode(),
-
-type:(dto.type as TicketType)||TicketType.STANDARD,
-
+type:dto.type ?? TicketType.STANDARD,
 price:dto.price,
-
 status:TicketStatus.GENERATED,
-
 festivalId:dto.festivalId
-
 });
 
 }
 
-
 return this.prisma.ticket.createMany({
-
 data:tickets
-
 });
 
 }
