@@ -3,6 +3,7 @@ import { ReportsService } from './reports.service';
 import { ReportsController } from './reports.controller';
 import { ReportsScheduler } from './reports.scheduler';
 import { PrismaService } from '../prisma/prisma.service';
+import { ReportsPdfService } from './reports.pdf';
 
 
 @Module({
@@ -13,7 +14,8 @@ import { PrismaService } from '../prisma/prisma.service';
   providers: [
     ReportsService,
     ReportsScheduler,
-    PrismaService
+    PrismaService,
+    ReportsPdfService
   ]
 })
 export class ReportsModule {}

@@ -1,13 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { ReportsPdfService } from './reports.pdf';
 
 
 @Injectable()
 export class ReportsService {
 
     constructor(
-        private prisma: PrismaService
-    ) {}
+    private prisma: PrismaService,
+    private pdfService: ReportsPdfService
+){}
 
 
     async generateWeeklyReports() {
@@ -73,8 +75,13 @@ export class ReportsService {
 
     }
 
+const pdf = await this.pdfService.generate(reports);
 
-    return reports;
+
+return {
+    reports,
+    pdf
+};
 
 }
 
