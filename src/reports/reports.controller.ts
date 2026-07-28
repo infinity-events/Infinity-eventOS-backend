@@ -26,7 +26,7 @@ export class ReportsController {
 
 
         await this.reportsMailService.sendReport(
-            'LA_TUA_EMAIL',
+            'alupidi888@gmail.com',
             report.pdf
         );
 
