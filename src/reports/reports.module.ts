@@ -4,6 +4,7 @@ import { ReportsController } from './reports.controller';
 import { ReportsScheduler } from './reports.scheduler';
 import { PrismaService } from '../prisma/prisma.service';
 import { ReportsPdfService } from './reports.pdf';
+import { ReportsMailService } from './reports.mail';
 
 
 @Module({
@@ -15,7 +16,8 @@ import { ReportsPdfService } from './reports.pdf';
     ReportsService,
     ReportsScheduler,
     PrismaService,
-    ReportsPdfService
+    ReportsPdfService,
+    ReportsMailService
   ]
 })
 export class ReportsModule {}

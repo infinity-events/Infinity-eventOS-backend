@@ -1,7 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import PDFDocument from 'pdfkit';
-import * as fs from 'fs';
-import * as path from 'path';
 
 
 @Injectable()
@@ -9,9 +7,8 @@ export class ReportsPdfService {
 
     async generate(data: any): Promise<{
     buffer: Buffer;
-    filePath: string;
     fileName: string;
-    }> {
+}> {
         const doc = new PDFDocument();
         const chunks: Uint8Array[] = [];
         doc.on('data', chunk => {
@@ -61,37 +58,13 @@ Incasso totale: € ${report.revenue}
         }
 
         doc.end();
+        
         const buffer = await pdfFinished;
 
-
-const fileName =
-    `report-${Date.now()}.pdf`;
-
-
-const folder =
-    path.join(process.cwd(), 'reports');
-
-
-if (!fs.existsSync(folder)) {
-    fs.mkdirSync(folder);
-}
-
-
-const filePath =
-    path.join(folder, fileName);
-
-
-fs.writeFileSync(
-    filePath,
-    buffer
-);
-
-
-return {
-    buffer,
-    filePath,
-    fileName
-};
+        return {
+            buffer,
+            fileName: `report-${Date.now()}.pdf`
+        };
 
     }
 
