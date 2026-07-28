@@ -7,19 +7,20 @@ import * as path from 'path';
 @Injectable()
 export class ReportsPdfService {
 
-    async generate(data: any): Promise<Buffer> {
+    async generate(data: any): Promise<{
+    buffer: Buffer;
+    filePath: string;
+    fileName: string;
+    }> {
         const doc = new PDFDocument();
-        const chunks: Buffer[] = [];
+        const chunks: Uint8Array[] = [];
         doc.on('data', chunk => {
             chunks.push(chunk);
         });
 
         const pdfFinished = new Promise<Buffer>((resolve) => {
-
             doc.on('end', () => {
-
-                resolve(Buffer.concat(chunks));
-
+        resolve(Buffer.from(Buffer.concat(chunks)));
             });
         });
 
