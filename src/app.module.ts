@@ -7,6 +7,8 @@ import { WristbandsModule } from './wristbands/wristbands.module';
 import { WalletsModule } from './wallets/wallets.module';
 import { AuthModule } from './auth/auth.module';
 import { AnalyticsModule } from './analytics/analytics.module';
+import { ScheduleModule } from '@nestjs/schedule';
+import { ReportsModule } from './reports/reports.module';
 
 
 @Module({
@@ -20,7 +22,9 @@ import { AnalyticsModule } from './analytics/analytics.module';
     WristbandsModule,
     WalletsModule,
     AuthModule,
-    AnalyticsModule
+    AnalyticsModule,
+    ScheduleModule.forRoot(),
+    ReportsModule,
   ],
 })
 export class AppModule {}

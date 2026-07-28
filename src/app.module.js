@@ -1,4 +1,5 @@
 import { UsersModule } from './users/users.module';
+import { ReportsModule } from './reports/reports.module';
 
 "use strict";
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
