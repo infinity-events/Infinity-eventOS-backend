@@ -22,7 +22,7 @@ export class ReportsMailService {
 
         await this.resend.emails.send({
 
-            from: 'Infinity EventOS <reports@tuodominio.it>',
+            from: 'onboarding@resend.dev',,
 
             to: email,
 
