@@ -21,8 +21,7 @@ export class ReportsMailService {
 
 
         await this.resend.emails.send({
-
-            from: 'onboarding@resend.dev',,
+            from: 'onboarding@resend.dev',
 
             to: email,
 
