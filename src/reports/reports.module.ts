@@ -1,23 +1,21 @@
-import { Module } from '@nestjs/common';
-import { ReportsService } from './reports.service';
-import { ReportsController } from './reports.controller';
-import { ReportsScheduler } from './reports.scheduler';
-import { PrismaService } from '../prisma/prisma.service';
-import { ReportsPdfService } from './reports.pdf';
-import { ReportsMailService } from './reports.mail';
-
+import {Module} from '@nestjs/common';
+import {ReportsController} from './reports.controller';
+import {ReportsService} from './reports.service';
+import {ReportsMailService} from './reports.mail';
+import {ReportsPdfService} from './reports.pdf';
+import {ReportsScheduler} from './reports.scheduler';
+import {PrismaService} from '../prisma/prisma.service';
 
 @Module({
-  controllers: [
-    ReportsController
-  ],
-
-  providers: [
-    ReportsService,
-    ReportsScheduler,
-    PrismaService,
-    ReportsPdfService,
-    ReportsMailService
-  ]
+controllers:[
+ReportsController
+],
+providers:[
+ReportsService,
+ReportsMailService,
+ReportsPdfService,
+ReportsScheduler,
+PrismaService
+]
 })
-export class ReportsModule {}
+export class ReportsModule{}
