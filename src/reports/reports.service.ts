@@ -1,88 +1,161 @@
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { ReportsPdfService } from './reports.pdf';
+import {Injectable} from '@nestjs/common';
+import {PrismaService} from '../prisma/prisma.service';
+import {ReportsPdfService} from './reports.pdf';
 
 
 @Injectable()
-export class ReportsService {
+export class ReportsService{
 
-    constructor(
-    private prisma: PrismaService,
-    private pdfService: ReportsPdfService
+
+constructor(
+private prisma:PrismaService,
+private pdfService:ReportsPdfService
 ){}
 
 
-    async generateWeeklyReports() {
 
-    const reports: {
-        festival: string;
-        ticketsSold: number;
-        activatedWristbands: number;
-        inactiveWristbands: number;
-        revenue: number;
-    }[] = [];
+async generateFestivalReport(
+festivalId:string
+){
 
 
-    const festivals = await this.prisma.festival.findMany();
+const festival=
+await this.prisma.festival.findUnique({
+
+where:{
+id:festivalId
+}
+
+});
 
 
-    for (const festival of festivals) {
-
-        const ticketsSold =
-            await this.prisma.ticket.count({
-                where:{
-                    festivalId: festival.id
-                }
-            });
+if(!festival){
+throw new Error("Festival non trovato");
+}
 
 
-        const activatedWristbands =
-            await this.prisma.wristband.count({
-                where:{
-                    festivalId: festival.id,
-                    activated:true
-                }
-            });
+
+const ticketsSold=
+await this.prisma.ticket.count({
+
+where:{
+festivalId
+}
+
+});
 
 
-        const inactiveWristbands =
-            await this.prisma.wristband.count({
-                where:{
-                    festivalId: festival.id,
-                    activated:false
-                }
-            });
+
+const wristbandsActivated=
+await this.prisma.wristband.count({
+
+where:{
+festivalId,
+activated:true
+}
+
+});
 
 
-        const revenue =
-            await this.prisma.ticket.aggregate({
-                where:{
-                    festivalId:festival.id
-                },
-                _sum:{
-                    price:true
-                }
-            });
+
+const wristbandsInactive=
+await this.prisma.wristband.count({
+
+where:{
+festivalId,
+activated:false
+}
+
+});
 
 
-        reports.push({
-            festival: festival.name,
-            ticketsSold,
-            activatedWristbands,
-            inactiveWristbands,
-            revenue: revenue._sum.price ?? 0
-        });
 
-    }
+const revenue=
+await this.prisma.ticket.aggregate({
 
-const pdf = await this.pdfService.generate(reports);
+where:{
+festivalId
+},
+
+_sum:{
+price:true
+}
+
+});
+
+
+
+const reports=[{
+
+festival:festival.name,
+
+ticketsSold,
+
+activatedWristbands:wristbandsActivated,
+
+inactiveWristbands:wristbandsInactive,
+
+revenue:revenue._sum.price||0
+
+}];
+
+
+
+const pdf=
+await this.pdfService.generate(reports);
+
 
 
 return {
-    reports,
-    pdf
+reports,
+pdf
 };
 
 }
+
+
+
+
+
+
+async generateWeeklyReports(){
+
+const festivals=
+await this.prisma.festival.findMany();
+
+const results:{
+reports:{
+festival:string;
+ticketsSold:number;
+activatedWristbands:number;
+inactiveWristbands:number;
+revenue:number;
+}[];
+pdf:{
+buffer:Buffer;
+fileName:string;
+};
+}[]=[];
+
+
+for(const festival of festivals){
+
+
+const report=
+await this.generateFestivalReport(
+festival.id
+);
+
+
+results.push(report);
+
+
+}
+
+
+return results;
+
+}
+
 
 }
