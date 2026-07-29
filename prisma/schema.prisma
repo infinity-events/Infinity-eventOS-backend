@@ -29,6 +29,8 @@ model Festival {
   transactions Transaction[]
   
   status FestivalStatus @default(BOZZA)
+
+  reportEmail String?
 }
 
 enum FestivalStatus {
