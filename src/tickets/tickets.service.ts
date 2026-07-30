@@ -150,7 +150,7 @@ await this.prisma.ticket.create({
 
 data:{
 
-code,
+code:this.generateTicketCode(),
 
 type:category.type,
 
@@ -162,7 +162,7 @@ festivalId:category.festivalId,
 
 categoryId:category.id,
 
-userId
+userId:userId
 
 }
 
@@ -188,5 +188,27 @@ return ticket;
 
 }
 
+async findUserTickets(userId:string){
+
+return this.prisma.ticket.findMany({
+
+where:{
+userId
+},
+
+include:{
+festival:true,
+wristband:true,
+category:true
+
+},
+
+orderBy:{
+createdAt:"desc"
+}
+
+});
+
+}
 
 }

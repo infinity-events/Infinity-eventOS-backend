@@ -29,7 +29,7 @@ return this.ticketsService.create(dto);
 @Post('purchase/:categoryId')
 purchase(
 @Param('categoryId') categoryId:string,
-@Req() req
+@Req() req:any
 ){
 
 return this.ticketsService.purchase(
@@ -45,6 +45,17 @@ findAll(
 @Param('festivalId') festivalId:string
 ){
 return this.ticketsService.findAll(festivalId);
+}
+
+@Get('user/me')
+getMyTickets(
+@Req() req:any
+){
+
+return this.ticketsService.findUserTickets(
+req.user.id
+);
+
 }
 
 }
