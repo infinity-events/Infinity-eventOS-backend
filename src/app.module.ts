@@ -10,6 +10,7 @@ import { AnalyticsModule } from './analytics/analytics.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ReportsModule } from './reports/reports.module';
 import { EntranceModule } from './entrance/entrance.module';
+import { TicketCategoryModule } from './ticket-category/ticket-category.module';
 
 
 @Module({
@@ -27,6 +28,7 @@ import { EntranceModule } from './entrance/entrance.module';
     ScheduleModule.forRoot(),
     ReportsModule,
     EntranceModule,
+    TicketCategoryModule
   ],
 })
 export class AppModule {}

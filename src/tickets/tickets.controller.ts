@@ -1,8 +1,6 @@
-import { Controller, Post, Body, Get, Param } from '@nestjs/common';
+import { Controller, Post, Body, Get, Param, Req } from '@nestjs/common';
 import { TicketsService } from './tickets.service';
 import { CreateTicketDto } from './dto/create-ticket.dto';
-
-
 
 @Controller('tickets')
 export class TicketsController {
@@ -16,9 +14,7 @@ private ticketsService:TicketsService
 stats(
 @Param('festivalId') festivalId:string
 ){
-
 return this.ticketsService.stats(festivalId);
-
 }
 
 
@@ -26,9 +22,16 @@ return this.ticketsService.stats(festivalId);
 create(
 @Body() dto:CreateTicketDto
 ){
-
 return this.ticketsService.create(dto);
+}
 
+
+@Post('purchase')
+purchase(
+@Body() dto:CreateTicketDto,
+@Req() req
+){
+return this.ticketsService.purchase(dto,req.user.id);
 }
 
 
@@ -36,9 +39,7 @@ return this.ticketsService.create(dto);
 findAll(
 @Param('festivalId') festivalId:string
 ){
-
 return this.ticketsService.findAll(festivalId);
-
 }
 
 }

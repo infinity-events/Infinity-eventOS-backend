@@ -54,6 +54,46 @@ data:tickets
 
 }
 
+async purchase(
+dto:CreateTicketDto,
+firebaseUid:string
+){
+
+const user=await this.prisma.user.findUnique({
+
+where:{
+firebaseUid
+}
+
+});
+
+
+if(!user)
+throw new Error("Utente non trovato");
+
+
+return this.prisma.ticket.create({
+
+data:{
+
+code:this.generateTicketCode(),
+
+type:dto.type,
+
+price:dto.price,
+
+status:TicketStatus.GENERATED,
+
+festivalId:dto.festivalId,
+
+userId:user.id
+
+}
+
+});
+
+}
+
 findAll(festivalId:string){
 
 return this.prisma.ticket.findMany({
