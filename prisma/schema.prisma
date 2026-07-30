@@ -26,6 +26,8 @@ model Festival {
 
   wristbands Wristband[]
 
+  entranceLogs EntranceLog[]
+
   transactions Transaction[]
   
   status FestivalStatus @default(BOZZA)
@@ -61,6 +63,8 @@ model Ticket {
   user User? @relation(fields: [userId], references: [id])
 
   wristband Wristband?
+
+  entranceLogs EntranceLog[]
 }
 
 enum TicketType {
@@ -107,6 +111,8 @@ model Wristband {
   user User? @relation(fields: [userId], references: [id])
 
   transactions Transaction[]
+
+  entranceLogs EntranceLog[]
 }
 
 enum WristbandStatus {
@@ -141,6 +147,50 @@ model User {
   wallet Wallet?
 
   operatorTransactions Transaction[] @relation("OperatorTransactions")
+
+  operatorEntranceLogs EntranceLog[] @relation("OperatorEntranceLogs")
+
+  entranceLogs EntranceLog[]
+}
+
+model EntranceLog {
+  id String @id @default(uuid())
+
+  festivalId String
+
+  festival Festival @relation(fields: [festivalId], references: [id])
+
+  ticketId String
+
+  ticket Ticket @relation(fields: [ticketId], references: [id])
+
+  wristbandId String?
+
+  wristband Wristband? @relation(fields: [wristbandId], references: [id])
+
+  userId String?
+
+  user User? @relation(fields: [userId], references: [id])
+
+  operatorId String?
+
+  operator User? @relation("OperatorEntranceLogs", fields: [operatorId], references: [id])
+
+  method EntranceMethod
+
+  createdAt DateTime @default(now())
+
+  @@index([festivalId, createdAt])
+
+  @@index([ticketId])
+}
+
+enum EntranceMethod {
+  QR
+
+  NFC
+
+  MANUAL
 }
 
 enum Role {
