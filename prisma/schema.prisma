@@ -46,6 +46,8 @@ model Ticket {
 
   code String @unique
 
+  qrCode String @unique
+
   type TicketType @default(STANDARD)
 
   price Float
