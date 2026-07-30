@@ -1,260 +1,437 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { EntranceMethod, Ticket, TicketStatus, Wristband } from '@prisma/client';
+import {Injectable,BadRequestException,NotFoundException,} from '@nestjs/common';
+import {EntranceAction,EntranceMethod,TicketStatus,} from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { EntranceManualDto, EntranceNfcDto, EntranceQrDto } from './dto/entrance.dto';
-
-type TicketWithRelations = Ticket & {
-  wristband: Wristband | null;
-  user: { id: string; firstName: string; lastName: string; email: string } | null;
-};
-
-type WristbandWithTicket = Wristband & {
-  ticket: TicketWithRelations | null;
-};
+import {EntranceQrDto,EntranceNfcDto,EntranceManualDto,} from './dto/entrance.dto';
 
 @Injectable()
 export class EntranceService {
-  constructor(private prisma: PrismaService) {}
+
+  constructor(
+    private prisma: PrismaService
+  ) {}
+
 
   async checkQr(dto: EntranceQrDto) {
-    const code = dto.code?.trim();
-
-    if (!dto.festivalId || !code) {
-      throw new BadRequestException('Festival e codice biglietto sono obbligatori');
-    }
 
     const ticket = await this.prisma.ticket.findFirst({
-      where: {
-        festivalId: dto.festivalId,
-        code,
+
+      where:{
+        festivalId:dto.festivalId,
+        code:dto.code.trim()
       },
-      include: {
-        wristband: true,
-        user: true,
-      },
+
+      include:{
+        user:true,
+        wristband:true
+      }
+
     });
 
-    if (!ticket) {
-      throw new NotFoundException('Biglietto non valido');
+
+    if(!ticket){
+      throw new NotFoundException(
+        "Biglietto non valido"
+      );
     }
 
-    return this.registerEntrance(ticket, EntranceMethod.QR, dto.operatorId);
-  }
-
-  async checkNfc(dto: EntranceNfcDto) {
-    const uid = dto.uid?.trim();
-
-    if (!dto.festivalId || !uid) {
-      throw new BadRequestException('Festival e UID NFC sono obbligatori');
-    }
-
-    const wristband = await this.prisma.wristband.findFirst({
-      where: {
-        festivalId: dto.festivalId,
-        OR: [
-          { uid },
-          { code: uid },
-          { activationCode: uid },
-        ],
-      },
-      include: {
-        ticket: {
-          include: {
-            wristband: true,
-            user: true,
-          },
-        },
-      },
-    });
-
-    if (!wristband) {
-      throw new NotFoundException('Braccialetto non trovato');
-    }
-
-    if (!wristband.activated) {
-      throw new BadRequestException('Braccialetto non attivato');
-    }
-
-    if (!wristband.ticket) {
-      throw new BadRequestException('Braccialetto senza biglietto associato');
-    }
 
     return this.registerEntrance(
-      this.ticketFromWristband(wristband),
-      EntranceMethod.NFC,
-      dto.operatorId,
-      wristband.id,
+      ticket,
+      EntranceMethod.QR,
+      dto
     );
+
   }
 
-  async checkManual(dto: EntranceManualDto) {
-    const query = dto.query?.trim();
 
-    if (!dto.festivalId || !query) {
-      throw new BadRequestException('Festival e ricerca sono obbligatori');
+
+  async checkNfc(dto: EntranceNfcDto) {
+
+
+    const wristband =
+      await this.prisma.wristband.findFirst({
+
+        where:{
+          festivalId:dto.festivalId,
+
+          OR:[
+            {
+              uid:dto.uid
+            },
+            {
+              code:dto.uid
+            },
+            {
+              activationCode:dto.uid
+            }
+          ]
+        },
+
+
+        include:{
+          ticket:{
+            include:{
+              user:true,
+              wristband:true
+            }
+          }
+        }
+
+      });
+
+
+
+    if(!wristband){
+
+      throw new NotFoundException(
+        "Braccialetto non trovato"
+      );
+
     }
 
-    const ticket = await this.prisma.ticket.findFirst({
-      where: {
-        festivalId: dto.festivalId,
-        OR: [
-          { code: query },
-          { user: { firstName: { contains: query } } },
-          { user: { lastName: { contains: query } } },
-          { user: { email: { contains: query } } },
-          { wristband: { uid: query } },
-          { wristband: { code: query } },
-          { wristband: { activationCode: query } },
-        ],
-      },
-      include: {
-        wristband: true,
-        user: true,
-      },
-    });
 
-    if (!ticket) {
-      throw new NotFoundException('Nessun biglietto o braccialetto trovato');
+
+    if(!wristband.activated){
+
+      throw new BadRequestException(
+        "Braccialetto non attivato"
+      );
+
     }
 
-    return this.registerEntrance(ticket, EntranceMethod.MANUAL, dto.operatorId);
+
+
+    if(!wristband.ticket){
+
+      throw new BadRequestException(
+        "Nessun biglietto associato"
+      );
+
+    }
+
+
+
+    return this.registerEntrance(
+      wristband.ticket,
+      EntranceMethod.NFC,
+      dto,
+      wristband.id
+    );
+
   }
 
-  logs(festivalId: string) {
-    return this.prisma.entranceLog.findMany({
-      where: {
-        festivalId,
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-      take: 50,
-      include: {
-        ticket: true,
-        wristband: true,
-        user: true,
-        operator: true,
-      },
-    });
+
+
+
+  async checkManual(dto: EntranceManualDto){
+
+
+    const ticket =
+      await this.prisma.ticket.findFirst({
+
+        where:{
+
+          festivalId:dto.festivalId,
+
+
+          OR:[
+
+            {
+              code:dto.query
+            },
+
+
+            {
+              user:{
+                email:{
+                  contains:dto.query,
+                  mode:'insensitive'
+                }
+              }
+            },
+
+
+            {
+              user:{
+                firstName:{
+                  contains:dto.query,
+                  mode:'insensitive'
+                }
+              }
+            },
+
+
+            {
+              user:{
+                lastName:{
+                  contains:dto.query,
+                  mode:'insensitive'
+                }
+              }
+            }
+
+          ]
+
+        },
+
+
+        include:{
+          user:true,
+          wristband:true
+        }
+
+      });
+
+
+
+    if(!ticket){
+
+      throw new NotFoundException(
+        "Partecipante non trovato"
+      );
+
+    }
+
+
+
+    return this.registerEntrance(
+      ticket,
+      EntranceMethod.MANUAL,
+      dto
+    );
+
   }
 
-  async stats(festivalId: string) {
-    const [totalTickets, inside, lastLog] = await Promise.all([
-      this.prisma.ticket.count({
-        where: {
-          festivalId,
-          status: {
-            not: TicketStatus.CANCELLED,
-          },
-        },
-      }),
-      this.prisma.entranceLog.count({
-        where: {
-          festivalId,
-        },
-      }),
-      this.prisma.entranceLog.findFirst({
-        where: {
-          festivalId,
-        },
-        orderBy: {
-          createdAt: 'desc',
-        },
-      }),
-    ]);
 
-    return {
-      totalTickets,
-      inside,
-      waiting: Math.max(totalTickets - inside, 0),
-      lastEntranceAt: lastLog?.createdAt ?? null,
-    };
-  }
+
+
 
   private async registerEntrance(
-    ticket: TicketWithRelations,
-    method: EntranceMethod,
-    operatorId?: string,
-    wristbandId?: string,
-  ) {
-    if (ticket.status === TicketStatus.CANCELLED) {
-      throw new BadRequestException('Biglietto annullato');
+    ticket:any,
+    method:EntranceMethod,
+    dto:any,
+    wristbandId?:string
+  ){
+
+
+    if(
+      ticket.status === TicketStatus.CANCELLED
+    ){
+
+      throw new BadRequestException(
+        "Biglietto annullato"
+      );
+
     }
 
-    const existingLog = await this.prisma.entranceLog.findFirst({
-      where: {
-        ticketId: ticket.id,
-      },
-      orderBy: {
-        createdAt: 'asc',
-      },
-      include: {
-        ticket: true,
-        wristband: true,
-        user: true,
-        operator: true,
-      },
-    });
 
-    if (existingLog || ticket.status === TicketStatus.USED) {
+
+    const alreadyEntered =
+      await this.prisma.entranceLog.findFirst({
+
+        where:{
+          ticketId:ticket.id,
+          action:EntranceAction.ENTRY
+        },
+
+        orderBy:{
+          createdAt:'desc'
+        }
+
+      });
+
+
+
+    if(alreadyEntered){
+
       return {
-        valid: true,
-        allowed: false,
-        alreadyChecked: true,
-        message: 'Biglietto gia utilizzato',
-        log: existingLog,
-        ticket,
+
+        valid:true,
+
+        allowed:false,
+
+        alreadyChecked:true,
+
+        reason:"ALREADY_ENTERED",
+
+        log:alreadyEntered,
+
+        ticket
+
       };
+
     }
 
-    const log = await this.prisma.$transaction(async (tx) => {
-      const entranceLog = await tx.entranceLog.create({
-        data: {
-          festivalId: ticket.festivalId,
-          ticketId: ticket.id,
-          wristbandId: wristbandId ?? ticket.wristband?.id,
-          userId: ticket.userId,
-          operatorId,
+
+
+
+
+    const log =
+      await this.prisma.entranceLog.create({
+
+        data:{
+
+          festivalId:ticket.festivalId,
+
+          ticketId:ticket.id,
+
+          userId:ticket.userId,
+
+
+          wristbandId:
+          wristbandId ??
+          ticket.wristband?.id,
+
+
           method,
+
+
+          action:EntranceAction.ENTRY,
+
+
+          gate:dto.gate,
+
+
+          device:dto.device
+
         },
-        include: {
-          ticket: true,
-          wristband: true,
-          user: true,
-          operator: true,
-        },
+
+
+        include:{
+
+          ticket:true,
+
+          user:true,
+
+          wristband:true
+
+        }
+
       });
 
-      await tx.ticket.update({
-        where: {
-          id: ticket.id,
-        },
-        data: {
-          status: TicketStatus.USED,
-        },
-      });
 
-      return entranceLog;
+
+
+
+    return {
+
+      valid:true,
+
+      allowed:true,
+
+      alreadyChecked:false,
+
+      reason:"VALID",
+
+      log,
+
+      ticket
+
+    };
+
+
+  }
+
+
+
+
+
+
+  async logs(
+    festivalId:string
+  ){
+
+
+    return this.prisma.entranceLog.findMany({
+
+      where:{
+        festivalId
+      },
+
+
+      orderBy:{
+        createdAt:'desc'
+      },
+
+
+      take:100,
+
+
+      include:{
+
+        ticket:true,
+
+        user:true,
+
+        wristband:true,
+
+        operator:true
+
+      }
+
     });
 
-    return {
-      valid: true,
-      allowed: true,
-      alreadyChecked: false,
-      message: 'Accesso consentito',
-      log,
-      ticket,
-    };
+
   }
 
-  private ticketFromWristband(wristband: WristbandWithTicket): TicketWithRelations {
-    if (!wristband.ticket) {
-      throw new BadRequestException('Braccialetto senza biglietto associato');
-    }
+
+
+
+
+
+  async stats(
+    festivalId:string
+  ){
+
+
+    const total =
+      await this.prisma.ticket.count({
+
+        where:{
+
+          festivalId,
+
+
+          status:{
+            not:TicketStatus.CANCELLED
+          }
+
+        }
+
+      });
+
+
+
+
+    const inside =
+      await this.prisma.entranceLog.count({
+
+        where:{
+
+          festivalId,
+
+          action:EntranceAction.ENTRY
+
+        }
+
+      });
+
+
+
 
     return {
-      ...wristband.ticket,
-      wristband,
+
+      totalTickets:total,
+
+      inside,
+
+      waiting:
+      Math.max(total-inside,0)
+
     };
+
+
   }
+
+
 }

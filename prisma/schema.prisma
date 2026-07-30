@@ -29,16 +29,16 @@ model Festival {
   entranceLogs EntranceLog[]
 
   transactions Transaction[]
-  
+
   status FestivalStatus @default(BOZZA)
 
   reportEmail String?
 }
 
 enum FestivalStatus {
-BOZZA
-ATTIVO
-CHIUSO
+  BOZZA
+  ATTIVO
+  CHIUSO
 }
 
 model Ticket {
@@ -79,8 +79,6 @@ enum TicketStatus {
   GENERATED
 
   ACTIVATED
-
-  USED
 
   CANCELLED
 }
@@ -148,48 +146,48 @@ model User {
 
   operatorTransactions Transaction[] @relation("OperatorTransactions")
 
-  operatorEntranceLogs EntranceLog[] @relation("OperatorEntranceLogs")
+  operatorEntranceLogs EntranceLog[] @relation("OperatorEntrance")
 
-  entranceLogs EntranceLog[]
+  entranceLogs EntranceLog[] @relation("ParticipantEntrance")
 }
 
 model EntranceLog {
   id String @id @default(uuid())
 
   festivalId String
-
-  festival Festival @relation(fields: [festivalId], references: [id])
+  festival   Festival @relation(fields: [festivalId], references: [id])
 
   ticketId String
-
-  ticket Ticket @relation(fields: [ticketId], references: [id])
+  ticket   Ticket @relation(fields: [ticketId], references: [id])
 
   wristbandId String?
-
-  wristband Wristband? @relation(fields: [wristbandId], references: [id])
+  wristband   Wristband? @relation(fields: [wristbandId], references: [id])
 
   userId String?
-
-  user User? @relation(fields: [userId], references: [id])
+  user   User?   @relation("ParticipantEntrance", fields: [userId], references: [id])
 
   operatorId String?
-
-  operator User? @relation("OperatorEntranceLogs", fields: [operatorId], references: [id])
+  operator   User?   @relation("OperatorEntrance", fields: [operatorId], references: [id])
 
   method EntranceMethod
 
+  action EntranceAction
+
+  gate String?
+
+  device String?
+
   createdAt DateTime @default(now())
+}
 
-  @@index([festivalId, createdAt])
-
-  @@index([ticketId])
+enum EntranceAction {
+  ENTRY
+  EXIT
 }
 
 enum EntranceMethod {
   QR
-
   NFC
-
   MANUAL
 }
 

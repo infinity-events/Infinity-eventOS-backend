@@ -1,17 +1,57 @@
+import { IsOptional, IsString } from "class-validator";
+
 export class EntranceQrDto {
-  festivalId: string;
-  code: string;
-  operatorId?: string;
+
+  @IsString()
+  festivalId!:string;
+
+  @IsString()
+  code!:string;
+
+  @IsOptional()
+  @IsString()
+  gate?:string;
+
+  @IsOptional()
+  @IsString()
+  device?:string;
+
 }
+
 
 export class EntranceNfcDto {
-  festivalId: string;
-  uid: string;
-  operatorId?: string;
+
+  @IsString()
+  festivalId!:string;
+
+  @IsString()
+  uid!:string;
+
+  @IsOptional()
+  @IsString()
+  gate?:string;
+
+  @IsOptional()
+  @IsString()
+  device?:string;
+
 }
 
+
 export class EntranceManualDto {
-  festivalId: string;
-  query: string;
-  operatorId?: string;
+
+  @IsString()
+  festivalId!:string;
+
+  @IsString()
+  query!:string;
+
+  @IsOptional()
+  @IsString()
+  gate?:string;
+
+  @IsOptional()
+  @IsString()
+  device?:string;
+
 }
