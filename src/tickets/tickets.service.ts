@@ -54,46 +54,6 @@ data:tickets
 
 }
 
-async purchase(
-dto:CreateTicketDto,
-firebaseUid:string
-){
-
-const user=await this.prisma.user.findUnique({
-
-where:{
-firebaseUid
-}
-
-});
-
-
-if(!user)
-throw new Error("Utente non trovato");
-
-
-return this.prisma.ticket.create({
-
-data:{
-
-code:this.generateTicketCode(),
-
-type:dto.type,
-
-price:dto.price,
-
-status:TicketStatus.GENERATED,
-
-festivalId:dto.festivalId,
-
-userId:user.id
-
-}
-
-});
-
-}
-
 findAll(festivalId:string){
 
 return this.prisma.ticket.findMany({
@@ -156,6 +116,75 @@ revenue:tickets.reduce(
 categories:grouped
 
 };
+
+}
+
+async purchase(
+categoryId:string,
+userId:string
+){
+
+const category =
+await this.prisma.ticketCategory.findUnique({
+where:{
+id:categoryId
+}
+});
+
+
+if(!category){
+throw new Error("Categoria non trovata");
+}
+
+
+if(category.sold >= category.quantity){
+throw new Error("Biglietti esauriti");
+}
+
+
+const code=this.generateTicketCode();
+
+
+const ticket =
+await this.prisma.ticket.create({
+
+data:{
+
+code,
+
+type:category.type,
+
+price:category.price,
+
+status:TicketStatus.GENERATED,
+
+festivalId:category.festivalId,
+
+categoryId:category.id,
+
+userId
+
+}
+
+});
+
+
+await this.prisma.ticketCategory.update({
+
+where:{
+id:category.id
+},
+
+data:{
+sold:{
+increment:1
+}
+}
+
+});
+
+
+return ticket;
 
 }
 

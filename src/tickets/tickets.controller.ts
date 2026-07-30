@@ -26,12 +26,17 @@ return this.ticketsService.create(dto);
 }
 
 
-@Post('purchase')
+@Post('purchase/:categoryId')
 purchase(
-@Body() dto:CreateTicketDto,
+@Param('categoryId') categoryId:string,
 @Req() req
 ){
-return this.ticketsService.purchase(dto,req.user.id);
+
+return this.ticketsService.purchase(
+categoryId,
+req.user.id
+);
+
 }
 
 
