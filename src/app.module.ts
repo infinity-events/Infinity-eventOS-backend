@@ -11,6 +11,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { ReportsModule } from './reports/reports.module';
 import { EntranceModule } from './entrance/entrance.module';
 import { TicketCategoryModule } from './ticket-category/ticket-category.module';
+import { PrismaModule } from './prisma/prisma.module';
 
 
 @Module({
@@ -28,7 +29,8 @@ import { TicketCategoryModule } from './ticket-category/ticket-category.module';
     ScheduleModule.forRoot(),
     ReportsModule,
     EntranceModule,
-    TicketCategoryModule
+    TicketCategoryModule,
+    PrismaModule
   ],
 })
 export class AppModule {}
