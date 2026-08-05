@@ -38,7 +38,7 @@ console.log("USER DAL GUARD:", req.user);
 
 return this.ticketsService.purchase(
 categoryId,
-req.user.uid
+req.user.id
 );
 
 }
