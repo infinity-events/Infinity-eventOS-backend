@@ -1,13 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { initializeApp, cert, getApps } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
+import { PrismaService } from '../prisma/prisma.service';
 
 
 @Injectable()
 export class FirebaseAdminService {
 
 
-constructor(){
+constructor(
+    private prisma: PrismaService
+){
 
     if(getApps().length === 0){
 
@@ -31,5 +34,32 @@ verifyToken(token:string){
 
 }
 
+async syncUser(decoded:any){
+
+    const existing =
+    await this.prisma.user.findUnique({
+        where:{
+            firebaseUid: decoded.uid
+        }
+    });
+
+
+    if(existing){
+        return existing;
+    }
+
+
+    return this.prisma.user.create({
+
+        data:{
+            firebaseUid: decoded.uid,
+            email: decoded.email,
+            firstName: decoded.name?.split(" ")[0] ?? "",
+            lastName: decoded.name?.split(" ")[1] ?? ""
+        }
+
+    });
+
+}
 
 }

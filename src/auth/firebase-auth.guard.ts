@@ -47,7 +47,9 @@ async canActivate(
             await this.firebase.verifyToken(token);
 
 
-        request.user = decoded;
+        const user = await this.firebase.syncUser(decoded);
+
+        request.user = user;
 
 
         return true;
