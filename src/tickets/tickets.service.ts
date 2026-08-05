@@ -141,6 +141,16 @@ if(category.sold >= category.quantity){
 throw new Error("Biglietti esauriti");
 }
 
+const user = await this.prisma.user.findUnique({
+    where:{
+        firebaseUid:userId
+    }
+});
+
+if(!user){
+    throw new Error("Utente non registrato nel database");
+}
+
 const ticket =
 await this.prisma.ticket.create({
 
