@@ -35,31 +35,46 @@ verifyToken(token:string){
 }
 
 async syncUser(decoded:any){
+    console.log("FIREBASE USER:", decoded);
+    console.log("UID:", decoded.uid);
+    
+    const firebaseUid = decoded.uid || decoded.user_id || decoded.sub;
+
+    if(!firebaseUid){
+        throw new Error("Firebase UID mancante");
+    }
 
     const existing =
     await this.prisma.user.findUnique({
         where:{
-            firebaseUid: decoded.uid
+            firebaseUid
         }
     });
-
 
     if(existing){
         return existing;
     }
 
-
     return this.prisma.user.create({
 
         data:{
-            firebaseUid: decoded.uid,
+            firebaseUid,
+
             email: decoded.email,
-            firstName: decoded.name?.split(" ")[0] ?? "",
-            lastName: decoded.name?.split(" ")[1] ?? ""
+
+            firstName:
+            decoded.name?.split(" ")[0] ?? "",
+
+            lastName:
+            decoded.name?.split(" ")[1] ?? "",
+
+            wallet:{
+                create:{
+                    balance:0
+                }
+            }
         }
-
     });
-
 }
 
 }
