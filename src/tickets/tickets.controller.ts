@@ -1,6 +1,8 @@
-import { Controller, Post, Body, Get, Param, Req } from '@nestjs/common';
+import { Controller, Post, Body, Get, Param, Req, UseGuards } from '@nestjs/common';
 import { TicketsService } from './tickets.service';
 import { CreateTicketDto } from './dto/create-ticket.dto';
+import {  } from '@nestjs/common';
+import { FirebaseAuthGuard } from '../auth/firebase-auth.guard';
 
 @Controller('tickets')
 export class TicketsController {
@@ -25,7 +27,7 @@ create(
 return this.ticketsService.create(dto);
 }
 
-
+@UseGuards(FirebaseAuthGuard)
 @Post('purchase/:categoryId')
 purchase(
 @Param('categoryId') categoryId:string,
@@ -49,6 +51,7 @@ findAll(
 return this.ticketsService.findAll(festivalId);
 }
 
+@UseGuards(FirebaseAuthGuard)
 @Get('user/me')
 getMyTickets(
 @Req() req:any
