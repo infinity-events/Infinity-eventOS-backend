@@ -30,7 +30,8 @@ import { PrismaModule } from './prisma/prisma.module';
     ReportsModule,
     EntranceModule,
     TicketCategoryModule,
-    PrismaModule
+    PrismaModule,
+    AuthModule
   ],
 })
 export class AppModule {}
