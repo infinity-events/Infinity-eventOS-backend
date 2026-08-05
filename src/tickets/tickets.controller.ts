@@ -34,7 +34,7 @@ purchase(
 @Req() req:any
 ){
 
-console.log("USER:", req.user);
+console.log("USER DAL GUARD:", req.user);
 
 return this.ticketsService.purchase(
 categoryId,

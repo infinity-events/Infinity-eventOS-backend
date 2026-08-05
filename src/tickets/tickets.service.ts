@@ -168,7 +168,7 @@ festivalId:category.festivalId,
 
 categoryId:category.id,
 
-userId:userId
+userId:user.id
 
 }
 
