@@ -58,7 +58,7 @@ getMyTickets(
 ){
 
 return this.ticketsService.findUserTickets(
-req.user.uid
+req.user.firebaseUid
 );
 
 }

@@ -184,19 +184,28 @@ return ticket;
 
 }
 
-async findUserTickets(userId:string){
+async findUserTickets(firebaseUid:string){
+
+const user = await this.prisma.user.findUnique({
+    where:{
+        firebaseUid
+    }
+});
+
+if(!user){
+    throw new Error("Utente non trovato");
+}
 
 return this.prisma.ticket.findMany({
 
 where:{
-userId
+userId:user.id
 },
 
 include:{
 festival:true,
 wristband:true,
 category:true
-
 },
 
 orderBy:{
