@@ -141,10 +141,6 @@ if(category.sold >= category.quantity){
 throw new Error("Biglietti esauriti");
 }
 
-
-const code=this.generateTicketCode();
-
-
 const ticket =
 await this.prisma.ticket.create({
 

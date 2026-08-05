@@ -32,9 +32,11 @@ purchase(
 @Req() req:any
 ){
 
+console.log("USER:", req.user);
+
 return this.ticketsService.purchase(
 categoryId,
-req.user.id
+req.user.uid
 );
 
 }
@@ -53,7 +55,7 @@ getMyTickets(
 ){
 
 return this.ticketsService.findUserTickets(
-req.user.id
+req.user.uid
 );
 
 }
