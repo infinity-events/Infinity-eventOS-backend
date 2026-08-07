@@ -79,8 +79,11 @@ wallet:{
         return this.prisma.user.findUnique({
             where:{
                 firebaseUid
+            },
+            include:{
+                wallet:true
             }
         });
     }
-    
+
 }

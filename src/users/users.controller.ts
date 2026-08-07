@@ -23,6 +23,16 @@ export class UsersController {
         return this.usersService.findAll();
     }
 
+    @Get('profile')
+    @UseGuards(FirebaseAuthGuard)
+    getProfile(
+        @Req() req:any
+    ){
+        return this.usersService.findByFirebaseUid(
+            req.user.uid
+        );
+    }
+
     @Post('sync')
     sync(
         @Body() dto: SyncUserDto
@@ -37,16 +47,6 @@ export class UsersController {
         @Body() dto:any
     ){
         return this.usersService.update(id,dto);
-    }
-
-    @Get('profile')
-    @UseGuards(FirebaseAuthGuard)
-    getProfile(
-        @Req() req:any
-    ){
-        return this.usersService.findByFirebaseUid(
-            req.user.firebaseUid
-        );
     }
 
 }
