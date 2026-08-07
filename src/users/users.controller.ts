@@ -29,7 +29,7 @@ export class UsersController {
         @Req() req:any
     ){
         return this.usersService.findByFirebaseUid(
-            req.user.uid
+            req.user.firebaseUid
         );
     }
 
