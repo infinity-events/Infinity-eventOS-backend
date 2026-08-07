@@ -74,4 +74,13 @@ wallet:{
         }
         });
     }
+
+    async findByFirebaseUid(firebaseUid:string){
+        return this.prisma.user.findUnique({
+            where:{
+                firebaseUid
+            }
+        });
+    }
+    
 }

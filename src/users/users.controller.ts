@@ -1,7 +1,8 @@
-import { Controller, Post, Body, Get, Put, Param } from '@nestjs/common';
+import { Controller, Post, Body, Get, Put, Param, Req, UseGuards } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { SyncUserDto } from './dto/sync-user.dto';
+import { FirebaseAuthGuard } from '../auth/firebase-auth.guard';
 
 @Controller('users')
 export class UsersController {
@@ -36,6 +37,16 @@ export class UsersController {
         @Body() dto:any
     ){
         return this.usersService.update(id,dto);
+    }
+
+    @Get('profile')
+    @UseGuards(FirebaseAuthGuard)
+    getProfile(
+        @Req() req:any
+    ){
+        return this.usersService.findByFirebaseUid(
+            req.user.firebaseUid
+        );
     }
 
 }
