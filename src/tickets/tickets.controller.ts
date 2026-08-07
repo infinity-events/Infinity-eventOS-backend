@@ -1,7 +1,6 @@
 import { Controller, Post, Body, Get, Param, Req, UseGuards } from '@nestjs/common';
 import { TicketsService } from './tickets.service';
 import { CreateTicketDto } from './dto/create-ticket.dto';
-import {  } from '@nestjs/common';
 import { FirebaseAuthGuard } from '../auth/firebase-auth.guard';
 
 @Controller('tickets')
@@ -59,7 +58,7 @@ getMyTickets(
 ){
 
 return this.ticketsService.findUserTickets(
-req.user.id
+req.user.firebaseUid
 );
 
 }
