@@ -51,14 +51,15 @@ findAll(
 return this.ticketsService.findAll(festivalId);
 }
 
-@UseGuards(FirebaseAuthGuard)
+
 @Get('user/me')
+@UseGuards(FirebaseAuthGuard)
 getMyTickets(
 @Req() req:any
 ){
 
 return this.ticketsService.findUserTickets(
-req.user.firebaseUid
+req.user.id
 );
 
 }

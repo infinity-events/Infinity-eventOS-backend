@@ -61,4 +61,17 @@ wallet:{
         }
     });
     }
+
+    async update(id:string,dto:any){
+        return this.prisma.user.update({
+        where:{
+            id
+        },
+        data:{
+            firstName:dto.firstName,
+            lastName:dto.lastName,
+            phone:dto.phone
+        }
+        });
+    }
 }

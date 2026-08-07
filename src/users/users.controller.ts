@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get } from '@nestjs/common';
+import { Controller, Post, Body, Get, Put, Param } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { SyncUserDto } from './dto/sync-user.dto';
@@ -28,6 +28,14 @@ export class UsersController {
     ){
         console.log("SYNC USER:", dto);
         return this.usersService.sync(dto);
+    }
+
+    @Put(':id')
+    update(
+        @Param('id') id:string,
+        @Body() dto:any
+    ){
+        return this.usersService.update(id,dto);
     }
 
 }
