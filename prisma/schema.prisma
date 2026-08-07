@@ -162,6 +162,20 @@ model User {
 
   lastName String
 
+  phone       String?
+
+  birthDate   String?
+
+  address     String?
+
+  city        String?
+
+  province    String?
+
+  zipCode     String?
+  
+  country     String?
+
   role Role @default(CUSTOMER)
 
   createdAt DateTime @default(now())
