@@ -13,11 +13,13 @@ export class EntranceService {
 
   async checkQr(dto: EntranceQrDto) {
 
+    const code = this.normalizeQrCode(dto.code);
+
     const ticket = await this.prisma.ticket.findFirst({
 
       where:{
         festivalId:dto.festivalId,
-        code:dto.code.trim()
+        code
       },
 
       include:{
@@ -41,6 +43,31 @@ export class EntranceService {
       dto
     );
 
+  }
+
+  /** Accept the plain ticket code as well as common QR payload formats. */
+  private normalizeQrCode(value: string) {
+    const raw = String(value ?? '').trim();
+    if (!raw) return raw;
+
+    try {
+      const parsed = JSON.parse(raw);
+      if (typeof parsed === 'string') return parsed.trim();
+      const candidate = parsed?.code ?? parsed?.ticketCode ?? parsed?.ticket?.code ?? parsed?.value;
+      if (candidate) return String(candidate).trim();
+    } catch {}
+
+    try {
+      const url = new URL(raw);
+      for (const key of ['code', 'ticket', 'ticketCode', 'ticket_code']) {
+        const candidate = url.searchParams.get(key);
+        if (candidate) return candidate.trim();
+      }
+      const lastSegment = decodeURIComponent(url.pathname.split('/').filter(Boolean).pop() ?? '');
+      if (lastSegment.startsWith('VF-')) return lastSegment;
+    } catch {}
+
+    return raw;
   }
 
 
