@@ -47,7 +47,8 @@ festival.id
 
 await this.reportsMailService.sendReport(
 festival.reportEmail,
-report.pdf
+report.pdf,
+report.reports[0]
 );
 
 

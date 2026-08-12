@@ -20,7 +20,10 @@ async generate(
 @Param('festivalId') festivalId:string
 ){
 
-return this.reportsService.generateFestivalReport(festivalId);
+const festival=await this.prisma.festival.findUnique({where:{id:festivalId}});
+const report=await this.reportsService.generateFestivalReport(festivalId);
+await this.reportsMailService.sendReport(festival?.reportEmail||null,report.pdf,report.reports[0]);
+return {message:"Report generato e inviato",report:report.reports[0]};
 
 }
 
@@ -45,7 +48,8 @@ await this.reportsService.generateFestivalReport(festivalId);
 
 await this.reportsMailService.sendReport(
 festival?.reportEmail||null,
-report.pdf
+report.pdf,
+report.reports[0]
 );
 
 
