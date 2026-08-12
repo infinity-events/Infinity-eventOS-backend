@@ -1,9 +1,11 @@
-import { Controller, Post, Body, Get, Param, Patch } from '@nestjs/common';
+import { Controller, Post, Body, Get, Param, Patch, Req, UseGuards } from '@nestjs/common';
 import { FestivalsService } from './festivals.service';
 import { CreateFestivalDto } from './dto/create-festival.dto';
+import { FirebaseAuthGuard } from '../auth/firebase-auth.guard';
 
 
 @Controller('festivals')
+@UseGuards(FirebaseAuthGuard)
 export class FestivalsController {
 
 
@@ -14,28 +16,30 @@ export class FestivalsController {
 
   @Post()
   create(
-    @Body() dto: CreateFestivalDto
+    @Body() dto: CreateFestivalDto,
+    @Req() req: any
   ) {
 
-    return this.festivalsService.create(dto);
+    return this.festivalsService.create(dto, req.user.id);
 
   }
 
 
   @Get()
-  findAll(){
+  findAll(@Req() req: any){
 
-    return this.festivalsService.findAll();
+    return this.festivalsService.findAll(req.user.id);
 
   }
 
   @Patch(':id')
     update(
     @Param('id') id:string,
-    @Body() dto:any
+    @Body() dto:any,
+    @Req() req:any
     ){
 
-    return this.festivalsService.update(id,dto);
+    return this.festivalsService.update(id,dto,req.user.id);
 
   }
 

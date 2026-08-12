@@ -34,6 +34,10 @@ model Festival {
 
   reportEmail String?
 
+  ownerId String?
+
+  owner User? @relation("OwnedFestivals", fields: [ownerId], references: [id])
+
   ticketCategories TicketCategory[]
 }
 
@@ -187,6 +191,8 @@ model User {
   wallet Wallet?
 
   operatorTransactions Transaction[] @relation("OperatorTransactions")
+
+  ownedFestivals Festival[] @relation("OwnedFestivals")
 
   operatorEntranceLogs EntranceLog[] @relation("OperatorEntrance")
 

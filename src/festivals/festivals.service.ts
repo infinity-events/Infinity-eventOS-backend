@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateFestivalDto } from './dto/create-festival.dto';
 
@@ -11,7 +11,7 @@ export class FestivalsService {
   ) {}
 
 
-  create(dto: CreateFestivalDto) {
+  create(dto: CreateFestivalDto, ownerId: string) {
 
     return this.prisma.festival.create({
       data: {
@@ -24,19 +24,27 @@ export class FestivalsService {
         
         endDate:new Date(dto.endDate),
 
+        ownerId,
+
       }
     });
 
   }
 
 
-  findAll() {
+  findAll(ownerId: string) {
 
-    return this.prisma.festival.findMany();
+    return this.prisma.festival.findMany({
+      where: { ownerId },
+      orderBy: { startDate: 'asc' },
+    });
 
   }
 
-  async update(id:string,dto:any){
+  async update(id:string,dto:any,ownerId:string){
+
+    const festival=await this.prisma.festival.findFirst({where:{id,ownerId}});
+    if(!festival)throw new NotFoundException('Festival non trovato');
 
     return this.prisma.festival.update({
 
