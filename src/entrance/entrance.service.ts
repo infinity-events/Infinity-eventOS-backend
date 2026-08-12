@@ -67,7 +67,8 @@ export class EntranceService {
       if (lastSegment.startsWith('VF-')) return lastSegment;
     } catch {}
 
-    return raw;
+    const ticketCode = raw.match(/VF-\d{4}-[A-Z0-9]{6}/i)?.[0];
+    return ticketCode ?? raw;
   }
 
 
