@@ -1,4 +1,4 @@
-import {Injectable} from '@nestjs/common';
+import {BadRequestException, Injectable, NotFoundException} from '@nestjs/common';
 import {PrismaService} from '../prisma/prisma.service';
 import {CreateWristbandDto} from './dto/create-wristband.dto';
 import {ActivateWristbandDto} from './dto/activate-wristband.dto';
@@ -67,15 +67,21 @@ activationCode:dto.activationCode
 
 
 if(!wristband){
+throw new NotFoundException("Bracciale non trovato");
 
-throw new Error("Bracciale non trovato");
+}
+
+
+if(wristband.code !== dto.code){
+
+throw new BadRequestException("Codice braccialetto non valido");
 
 }
 
 
 if(wristband.activated){
 
-throw new Error("Bracciale già attivato");
+throw new BadRequestException("Bracciale già attivato");
 
 }
 
@@ -91,7 +97,7 @@ firebaseUid
 
 if(!user){
 
-throw new Error("Utente non trovato");
+throw new NotFoundException("Utente non trovato");
 
 }
 

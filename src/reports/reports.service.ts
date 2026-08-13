@@ -1,4 +1,4 @@
-import {Injectable} from '@nestjs/common';
+import {Injectable,NotFoundException} from '@nestjs/common';
 import {PrismaService} from '../prisma/prisma.service';
 import {ReportsPdfService} from './reports.pdf';
 
@@ -30,7 +30,7 @@ id:festivalId
 
 
 if(!festival){
-throw new Error("Festival non trovato");
+throw new NotFoundException("Festival non trovato");
 }
 
 
@@ -39,7 +39,10 @@ const ticketsSold=
 await this.prisma.ticket.count({
 
 where:{
-festivalId
+festivalId,
+status:{
+not:'CANCELLED'
+}
 }
 
 });
@@ -74,7 +77,10 @@ const revenue=
 await this.prisma.ticket.aggregate({
 
 where:{
-festivalId
+festivalId,
+status:{
+not:'CANCELLED'
+}
 },
 
 _sum:{
@@ -85,9 +91,38 @@ price:true
 
 
 
+const [entrances,ticketBreakdown]=await Promise.all([
+this.prisma.entranceLog.count({
+where:{
+festivalId,
+action:'ENTRY'
+}
+}),
+this.prisma.ticket.groupBy({
+by:['type'],
+where:{
+festivalId,
+status:{
+not:'CANCELLED'
+}
+},
+_count:{
+id:true
+},
+_sum:{
+price:true
+}
+})
+]);
+
 const reports=[{
 
 festival:festival.name,
+festivalLocation:festival.location,
+period:festival.startDate&&festival.endDate
+?festival.startDate.toLocaleDateString('it-IT')+' - '+festival.endDate.toLocaleDateString('it-IT')
+:undefined,
+generatedAt:new Date().toISOString(),
 
 ticketsSold,
 
@@ -95,7 +130,14 @@ activatedWristbands:wristbandsActivated,
 
 inactiveWristbands:wristbandsInactive,
 
-revenue:revenue._sum.price||0
+revenue:revenue._sum.price||0,
+entrances,
+ticketBreakdown:ticketBreakdown.map(item=>({
+name:item.type,
+type:item.type,
+quantity:item._count.id,
+revenue:item._sum.price||0
+}))
 
 }];
 
