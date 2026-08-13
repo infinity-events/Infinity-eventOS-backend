@@ -58,11 +58,10 @@ firebaseUid:string
 ){
 
 const activationCode = dto.activationCode?.trim().toUpperCase();
-const wristbandCode = (dto.code ?? dto.wristbandCode)?.trim().toUpperCase();
 
-if(!activationCode || !wristbandCode){
+if(!activationCode){
 
-throw new BadRequestException("Codice di attivazione e codice braccialetto sono obbligatori");
+throw new BadRequestException("Il codice di attivazione è obbligatorio");
 
 }
 
@@ -77,13 +76,6 @@ activationCode
 
 if(!wristband){
 throw new NotFoundException("Bracciale non trovato");
-
-}
-
-
-if(wristband.code.trim().toUpperCase() !== wristbandCode){
-
-throw new BadRequestException("Codice braccialetto non valido");
 
 }
 

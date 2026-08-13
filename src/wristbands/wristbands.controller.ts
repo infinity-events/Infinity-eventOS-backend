@@ -35,7 +35,7 @@ activate(
 ){
 return this.service.activate(
 dto,
-req.user.uid
+req.user.firebaseUid
 );
 }
 
