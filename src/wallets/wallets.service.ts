@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { TopupWalletDto } from './dto/topup-wallet.dto';
 import { PayWristbandDto } from './dto/pay-wristband.dto';
@@ -9,34 +9,46 @@ export class WalletsService{
 
 constructor(private prisma:PrismaService){}
 
-async topup(dto:TopupWalletDto){
+private async getWristbandWallet(wristbandCode:string){
+const code=wristbandCode?.trim().toUpperCase();
+if(!code)throw new BadRequestException("Codice braccialetto obbligatorio");
 
 const wristband=await this.prisma.wristband.findUnique({
-where:{code:dto.wristbandCode},
-include:{
-user:{
-include:{
-wallet:true
-}
-}
-}
+where:{code},
+include:{user:true}
 });
 
-if(!wristband)throw new Error("Bracciale non trovato");
+if(!wristband)throw new NotFoundException("Braccialetto non trovato");
+if(!wristband.userId)throw new BadRequestException("Braccialetto non associato a un utente");
 
-if(!wristband.user?.wallet)throw new Error("Wallet non trovato");
+const wallet=await this.prisma.wallet.upsert({
+where:{userId:wristband.userId},
+update:{},
+create:{userId:wristband.userId,balance:0}
+});
 
-const wallet=wristband.user.wallet;
+return {wristband,wallet};
+}
+
+private validateAmount(amount:number){
+const value=Number(amount);
+if(!Number.isFinite(value)||value<=0)throw new BadRequestException("L'importo deve essere maggiore di zero");
+return value;
+}
+
+async topup(dto:TopupWalletDto){
+const amount=this.validateAmount(dto.amount);
+const {wristband,wallet}=await this.getWristbandWallet(dto.wristbandCode);
 
 return this.prisma.wallet.update({
 where:{id:wallet.id},
 data:{
 balance:{
-increment:dto.amount
+increment:amount
 },
 transactions:{
 create:{
-amount:dto.amount,
+amount,
 type:"TOPUP",
 description:"Ricarica wallet",
 wristbandId:wristband.id
@@ -48,34 +60,21 @@ wristbandId:wristband.id
 }
 
 async pay(dto:PayDto){
+const amount=this.validateAmount(dto.amount);
+const {wristband,wallet}=await this.getWristbandWallet(dto.wristbandCode);
 
-const wristband=await this.prisma.wristband.findUnique({
-where:{code:dto.wristbandCode},
-include:{
-user:{
-include:{
-wallet:true
-}
-}
-}
-});
-
-if(!wristband)throw new Error("Bracciale non trovato");
-if(!wristband.user?.wallet)throw new Error("Wallet non trovato");
-
-const wallet=wristband.user.wallet;
-
-if(wallet.balance<dto.amount)throw new Error("Saldo insufficiente");
+if(wallet.balance<amount)throw new BadRequestException("Saldo insufficiente");
 
 return this.prisma.wallet.update({
 where:{id:wallet.id},
 data:{
-balance:{decrement:dto.amount},
+balance:{decrement:amount},
 transactions:{
 create:{
-amount:dto.amount,
+amount,
 type:"PURCHASE",
-description:dto.description
+description:dto.description,
+wristbandId:wristband.id
 }
 }
 }
@@ -84,33 +83,21 @@ description:dto.description
 }
 
 async payByWristband(dto:PayWristbandDto){
+const amount=this.validateAmount(dto.amount);
+const {wristband,wallet}=await this.getWristbandWallet(dto.wristbandCode);
 
-const wristband=await this.prisma.wristband.findUnique({
-where:{code:dto.wristbandCode},
-include:{
-user:{
-include:{
-wallet:true
-}
-}
-}
-});
-
-if(!wristband?.user?.wallet)throw new Error("Bracciale non associato");
-
-const wallet=wristband.user.wallet;
-
-if(wallet.balance<dto.amount)throw new Error("Saldo insufficiente");
+if(wallet.balance<amount)throw new BadRequestException("Saldo insufficiente");
 
 return this.prisma.wallet.update({
 where:{id:wallet.id},
 data:{
-balance:{decrement:dto.amount},
+balance:{decrement:amount},
 transactions:{
 create:{
-amount:dto.amount,
+amount,
 type:"PURCHASE",
-description:dto.description
+description:dto.description,
+wristbandId:wristband.id
 }
 }
 }
