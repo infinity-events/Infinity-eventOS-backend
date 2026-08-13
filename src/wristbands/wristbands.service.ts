@@ -57,10 +57,19 @@ dto:ActivateWristbandDto,
 firebaseUid:string
 ){
 
+const activationCode = dto.activationCode?.trim().toUpperCase();
+const wristbandCode = (dto.code ?? dto.wristbandCode)?.trim().toUpperCase();
+
+if(!activationCode || !wristbandCode){
+
+throw new BadRequestException("Codice di attivazione e codice braccialetto sono obbligatori");
+
+}
+
 const wristband=await this.prisma.wristband.findUnique({
 
 where:{
-activationCode:dto.activationCode
+activationCode
 }
 
 });
@@ -72,7 +81,7 @@ throw new NotFoundException("Bracciale non trovato");
 }
 
 
-if(wristband.code !== dto.code){
+if(wristband.code.trim().toUpperCase() !== wristbandCode){
 
 throw new BadRequestException("Codice braccialetto non valido");
 

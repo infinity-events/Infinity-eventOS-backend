@@ -1,5 +1,6 @@
 export class ActivateWristbandDto {
     activationCode!: string;
-    code!: string;
+    code?: string;
+    wristbandCode?: string;
 
 }
