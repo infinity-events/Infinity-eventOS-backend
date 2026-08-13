@@ -63,7 +63,11 @@ festivalId
 },
 
 include:{
-user:true,
+user:{
+include:{
+wristbands:true
+}
+},
 wristband:true
 }
 
