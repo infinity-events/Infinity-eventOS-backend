@@ -12,6 +12,7 @@ import { ReportsModule } from './reports/reports.module';
 import { EntranceModule } from './entrance/entrance.module';
 import { TicketCategoryModule } from './ticket-category/ticket-category.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { StripeModule } from './stripe/stripe.module';
 
 
 @Module({
@@ -32,6 +33,7 @@ import { PrismaModule } from './prisma/prisma.module';
     TicketCategoryModule,
     PrismaModule,
     AuthModule
+    ,StripeModule
   ],
 })
 export class AppModule {}

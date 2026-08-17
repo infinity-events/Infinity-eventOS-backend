@@ -39,6 +39,9 @@ model Festival {
   owner User? @relation("OwnedFestivals", fields: [ownerId], references: [id])
 
   ticketCategories TicketCategory[]
+
+  stripeAccountId String? @unique
+  stripeAccountStatus String?
 }
 
 enum FestivalStatus {
@@ -75,6 +78,16 @@ model Ticket {
   wristband Wristband?
 
   entranceLogs EntranceLog[]
+
+  paymentStatus PaymentStatus @default(PAID)
+  stripeCheckoutSessionId String? @unique
+  stripePaymentIntentId String?
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
 }
 
 enum TicketType {

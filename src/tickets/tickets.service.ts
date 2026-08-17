@@ -203,7 +203,8 @@ if(!user){
 return this.prisma.ticket.findMany({
 
 where:{
-userId:user.id
+userId:user.id,
+paymentStatus: 'PAID'
 },
 
 include:{
