@@ -17,9 +17,10 @@ export class EntranceService {
 
     const ticket = await this.prisma.ticket.findFirst({
 
-      where:{
-        festivalId:dto.festivalId,
-        code
+        where:{
+          festivalId:dto.festivalId,
+          code,
+          paymentStatus:'PAID'
       },
 
       include:{
@@ -160,6 +161,7 @@ export class EntranceService {
         where:{
 
           festivalId:dto.festivalId,
+          paymentStatus:'PAID',
 
 
           OR:[
