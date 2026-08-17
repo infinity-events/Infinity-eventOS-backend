@@ -71,12 +71,25 @@ export class StripeService {
     if (!category) throw new NotFoundException('Categoria non trovata');
     if (category.sold >= category.quantity) throw new BadRequestException('Biglietti esauriti');
     if (!category.festival.stripeAccountId) throw new BadRequestException('Questo festival non ha ancora collegato Stripe');
-    const ticket = await this.prisma.$transaction(async (tx) => {
-      const fresh = await tx.ticketCategory.updateMany({ where: { id: categoryId, sold: { lt: category.quantity } }, data: { sold: { increment: 1 } } });
-      if (fresh.count !== 1) throw new BadRequestException('Biglietti esauriti');
-      return tx.ticket.create({ data: { code: `VF-${new Date().getFullYear()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`, type: category.type, price: category.price, festivalId: category.festivalId, categoryId, userId, paymentStatus: 'PENDING' } });
-    });
+    let account: Stripe.Account;
     try {
+      account = await this.client.accounts.retrieve(category.festival.stripeAccountId);
+    } catch (error) {
+      const stripeError = error as { message?: string; code?: string; type?: string };
+      console.error('Stripe account error', { type: stripeError?.type, code: stripeError?.code, message: stripeError?.message });
+      throw new BadRequestException(stripeError?.message || 'Account Stripe non raggiungibile');
+    }
+    if (!account.charges_enabled) {
+      throw new BadRequestException('Completa la verifica dell’account Stripe prima di vendere i biglietti');
+    }
+
+    let ticket: { id: string } | undefined;
+    try {
+      ticket = await this.prisma.$transaction(async (tx) => {
+        const fresh = await tx.ticketCategory.updateMany({ where: { id: categoryId, sold: { lt: category.quantity } }, data: { sold: { increment: 1 } } });
+        if (fresh.count !== 1) throw new BadRequestException('Biglietti esauriti');
+        return tx.ticket.create({ data: { code: `VF-${new Date().getFullYear()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`, type: category.type, price: category.price, festivalId: category.festivalId, categoryId, userId, paymentStatus: 'PENDING' } });
+      });
       const session = await this.client.checkout.sessions.create({
         mode: 'payment',
         line_items: [{ price_data: { currency: 'eur', product_data: { name: `${category.festival.name} · ${category.name}` }, unit_amount: Math.round(category.price * 100) }, quantity: 1 }],
@@ -87,8 +100,16 @@ export class StripeService {
       await this.prisma.ticket.update({ where: { id: ticket.id }, data: { stripeCheckoutSessionId: session.id } });
       return { url: session.url };
     } catch (error) {
-      await this.prisma.$transaction([this.prisma.ticket.delete({ where: { id: ticket.id } }), this.prisma.ticketCategory.update({ where: { id: categoryId }, data: { sold: { decrement: 1 } } })]);
-      throw error;
+      if (ticket) {
+        await this.prisma.$transaction([
+          this.prisma.ticket.delete({ where: { id: ticket.id } }),
+          this.prisma.ticketCategory.update({ where: { id: categoryId }, data: { sold: { decrement: 1 } } }),
+        ]);
+      }
+      const stripeError = error as { message?: string; code?: string; type?: string };
+      console.error('Stripe Checkout error', { type: stripeError?.type, code: stripeError?.code, message: stripeError?.message });
+      if (error instanceof BadRequestException) throw error;
+      throw new BadRequestException(stripeError?.message || 'Stripe non ha potuto creare il pagamento');
     }
   }
 
