@@ -6,7 +6,7 @@ import { PrismaService } from '../prisma/prisma.service';
 export class StripeService {
   private stripe?: Stripe;
   private readonly apiUrl = process.env.API_PUBLIC_URL || 'https://infinity-eventos-api.onrender.com';
-  private readonly vividFestUrl = process.env.VIVIDFEST_URL || 'https://vividfest.vercel.app/payment-success.html';
+  private readonly vividFestUrl = process.env.VIVIDFEST_URL || 'https://vividfest.vercel.app';
 
   constructor(private readonly prisma: PrismaService) {}
 
@@ -122,5 +122,31 @@ export class StripeService {
       if (ticketId) await this.prisma.ticket.updateMany({ where: { id: ticketId, paymentStatus: 'PENDING' }, data: { paymentStatus: 'PAID', stripePaymentIntentId: typeof session.payment_intent === 'string' ? session.payment_intent : null } });
     }
     return { received: true };
+  }
+
+  async verifyCheckout(sessionId: string, userId: string) {
+    this.ensureConfigured();
+    const ticket = await this.prisma.ticket.findUnique({ where: { stripeCheckoutSessionId: sessionId }, include: { festival: true } });
+    if (!ticket || ticket.userId !== userId || !ticket.festival.stripeAccountId) throw new BadRequestException('Sessione di pagamento non trovata');
+    const session = await this.client.checkout.sessions.retrieve(sessionId, {}, { stripeAccount: ticket.festival.stripeAccountId });
+    if (session.payment_status !== 'paid') throw new BadRequestException('Il pagamento non risulta completato');
+    await this.prisma.ticket.update({ where: { id: ticket.id }, data: { paymentStatus: 'PAID', stripePaymentIntentId: typeof session.payment_intent === 'string' ? session.payment_intent : null } });
+    return { paid: true, ticketId: ticket.id };
+  }
+
+  async reconcilePendingTickets(userId: string) {
+    this.ensureConfigured();
+    const pending = await this.prisma.ticket.findMany({ where: { userId, paymentStatus: 'PENDING', stripeCheckoutSessionId: { not: null } }, include: { festival: true } });
+    for (const ticket of pending) {
+      if (!ticket.stripeCheckoutSessionId || !ticket.festival.stripeAccountId) continue;
+      try {
+        const session = await this.client.checkout.sessions.retrieve(ticket.stripeCheckoutSessionId, {}, { stripeAccount: ticket.festival.stripeAccountId });
+        if (session.payment_status === 'paid') {
+          await this.prisma.ticket.update({ where: { id: ticket.id }, data: { paymentStatus: 'PAID', stripePaymentIntentId: typeof session.payment_intent === 'string' ? session.payment_intent : null } });
+        }
+      } catch (error) {
+        console.error('Pending ticket reconciliation error', { ticketId: ticket.id, message: (error as { message?: string })?.message });
+      }
+    }
   }
 }

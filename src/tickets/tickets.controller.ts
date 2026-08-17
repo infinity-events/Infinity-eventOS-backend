@@ -1,4 +1,4 @@
-import { BadRequestException, Controller, Post, Body, Get, Param, Req, UseGuards } from '@nestjs/common';
+import { BadRequestException, Controller, Post, Body, Get, Param, Query, Req, UseGuards } from '@nestjs/common';
 import { TicketsService } from './tickets.service';
 import { CreateTicketDto } from './dto/create-ticket.dto';
 import { FirebaseAuthGuard } from '../auth/firebase-auth.guard';
@@ -24,6 +24,12 @@ return this.ticketsService.stats(festivalId);
 @Post('checkout/:categoryId')
 checkout(@Param('categoryId') categoryId: string, @Req() req: any) {
   return this.stripeService.createCheckout(categoryId, req.user.id);
+}
+
+@UseGuards(FirebaseAuthGuard)
+@Get('checkout/verify')
+verifyCheckout(@Query('session_id') sessionId: string, @Req() req: any) {
+  return this.stripeService.verifyCheckout(sessionId, req.user.id);
 }
 
 
@@ -58,9 +64,11 @@ return this.ticketsService.findAll(festivalId);
 
 @Get('user/me')
 @UseGuards(FirebaseAuthGuard)
-getMyTickets(
+async getMyTickets(
 @Req() req:any
 ){
+
+await this.stripeService.reconcilePendingTickets(req.user.id);
 
 return this.ticketsService.findUserTickets(
 req.user.firebaseUid
