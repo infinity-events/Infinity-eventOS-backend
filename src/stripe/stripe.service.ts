@@ -6,7 +6,7 @@ import { PrismaService } from '../prisma/prisma.service';
 export class StripeService {
   private stripe?: Stripe;
   private readonly apiUrl = process.env.API_PUBLIC_URL || 'https://infinity-eventos-api.onrender.com';
-  private readonly vividFestUrl = process.env.VIVIDFEST_URL || 'https://vividfest.it';
+  private readonly vividFestUrl = process.env.VIVIDFEST_URL || 'https://infinityeventos.dpdns.org';
 
   constructor(private readonly prisma: PrismaService) {}
 
