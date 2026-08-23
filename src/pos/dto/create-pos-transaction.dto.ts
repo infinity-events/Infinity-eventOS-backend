@@ -18,19 +18,19 @@ export enum PosPaymentMethod {
 
 export class PosTransactionItemDto {
   @IsString()
-  productId: string;
+  productId!: string;
 
   @IsInt()
   @Min(1)
-  quantity: number;
+  quantity!: number;
 }
 
 export class CreatePosTransactionDto {
   @IsString()
-  festivalId: string;
+  festivalId!: string;
 
   @IsEnum(PosPaymentMethod)
-  paymentMethod: PosPaymentMethod;
+  paymentMethod!: PosPaymentMethod;
 
   @IsOptional()
   @IsString()
@@ -39,5 +39,5 @@ export class CreatePosTransactionDto {
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => PosTransactionItemDto)
-  items: PosTransactionItemDto[];
+  items!: PosTransactionItemDto[];
 }
