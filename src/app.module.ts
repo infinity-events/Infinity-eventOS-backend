@@ -13,6 +13,7 @@ import { EntranceModule } from './entrance/entrance.module';
 import { TicketCategoryModule } from './ticket-category/ticket-category.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { StripeModule } from './stripe/stripe.module';
+import { PosModule } from './pos/pos.module';
 
 
 @Module({
@@ -32,8 +33,9 @@ import { StripeModule } from './stripe/stripe.module';
     EntranceModule,
     TicketCategoryModule,
     PrismaModule,
-    AuthModule
-    ,StripeModule
+    AuthModule,
+    StripeModule,
+    PosModule
   ],
 })
 export class AppModule {}

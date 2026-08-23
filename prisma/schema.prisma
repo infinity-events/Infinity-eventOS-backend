@@ -30,6 +30,8 @@ model Festival {
 
   transactions Transaction[]
 
+  posTransactions PosTransaction[]
+
   status FestivalStatus @default(BOZZA)
 
   reportEmail String?
@@ -40,8 +42,10 @@ model Festival {
 
   ticketCategories TicketCategory[]
 
-  stripeAccountId String? @unique
+  stripeAccountId     String? @unique
   stripeAccountStatus String?
+
+  products Product[]
 }
 
 enum FestivalStatus {
@@ -79,9 +83,9 @@ model Ticket {
 
   entranceLogs EntranceLog[]
 
-  paymentStatus PaymentStatus @default(PAID)
-  stripeCheckoutSessionId String? @unique
-  stripePaymentIntentId String?
+  paymentStatus           PaymentStatus @default(PAID)
+  stripeCheckoutSessionId String?       @unique
+  stripePaymentIntentId   String?
 }
 
 enum PaymentStatus {
@@ -179,19 +183,19 @@ model User {
 
   lastName String
 
-  phone       String?
+  phone String?
 
-  birthDate   String?
+  birthDate String?
 
-  address     String?
+  address String?
 
-  city        String?
+  city String?
 
-  province    String?
+  province String?
 
-  zipCode     String?
-  
-  country     String?
+  zipCode String?
+
+  country String?
 
   role Role @default(CUSTOMER)
 
@@ -204,6 +208,8 @@ model User {
   wallet Wallet?
 
   operatorTransactions Transaction[] @relation("OperatorTransactions")
+
+  posTransactions PosTransaction[] @relation("PosOperatorTransactions")
 
   ownedFestivals Festival[] @relation("OwnedFestivals")
 
@@ -303,4 +309,104 @@ enum TransactionType {
   PURCHASE
   REFUND
   TRANSFER
+}
+
+enum ProductStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum StockMovementType {
+  INITIAL
+  RESTOCK
+  SALE
+  ADJUSTMENT
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  OTHER
+}
+
+model Product {
+  id String @id @default(cuid())
+
+  festivalId String
+  festival   Festival @relation(fields: [festivalId], references: [id], onDelete: Cascade)
+
+  name        String
+  description String?
+  imageUrl    String?
+  category    String?
+
+  price Float
+
+  stock Int @default(0)
+
+  status ProductStatus @default(ACTIVE)
+
+  movements StockMovement[]
+  items     PosTransactionItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([festivalId])
+}
+
+model StockMovement {
+  id          String            @id @default(cuid())
+  productId   String
+  festivalId  String
+  type        StockMovementType
+  quantity    Int
+  stockBefore Int
+  stockAfter  Int
+  note        String?
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([productId])
+  @@index([festivalId])
+}
+
+model PosTransaction {
+  id String @id @default(cuid())
+
+  festivalId String
+  festival   Festival @relation(fields: [festivalId], references: [id], onDelete: Cascade)
+
+  total         Float
+  paymentMethod PaymentMethod @default(CASH)
+
+  operatorId String?
+  operator   User?   @relation("PosOperatorTransactions", fields: [operatorId], references: [id])
+
+  items PosTransactionItem[]
+
+  createdAt DateTime @default(now())
+
+  @@index([festivalId])
+  @@index([operatorId])
+}
+
+model PosTransactionItem {
+  id String @id @default(cuid())
+
+  transactionId String
+  transaction   PosTransaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+
+  productName String
+  unitPrice   Float
+  quantity    Int
+  subtotal    Float
+
+  @@index([transactionId])
+  @@index([productId])
 }
