@@ -86,6 +86,8 @@ model Ticket {
   paymentStatus           PaymentStatus @default(PAID)
   stripeCheckoutSessionId String?       @unique
   stripePaymentIntentId   String?
+
+  emailSentAt DateTime?
 }
 
 enum PaymentStatus {

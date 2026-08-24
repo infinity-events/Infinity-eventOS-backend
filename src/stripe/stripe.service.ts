@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import Stripe from 'stripe';
 import { PrismaService } from '../prisma/prisma.service';
+import { TicketMailService } from '../tickets/ticket-mail.service';
 
 @Injectable()
 export class StripeService {
@@ -8,7 +9,7 @@ export class StripeService {
   private readonly apiUrl = process.env.API_PUBLIC_URL || 'https://infinity-eventos-api.onrender.com';
   private readonly vividFestUrl = process.env.VIVIDFEST_URL || 'https://vividfest.vercel.app';
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService, private readonly ticketMailService: TicketMailService,) {}
 
   private ensureConfigured() {
     if (!process.env.STRIPE_SECRET_KEY) throw new BadRequestException('Stripe non configurato');
@@ -101,28 +102,164 @@ export class StripeService {
     }
   }
 
-  private async fulfillPaidSession(session: Stripe.Checkout.Session, userId: string, festivalId: string, categoryId: string) {
-    const existing = await this.prisma.ticket.findUnique({ where: { stripeCheckoutSessionId: session.id } });
-    if (existing) {
-      if (existing.userId !== userId) throw new BadRequestException('Sessione di pagamento non associata all’utente');
-      if (existing.paymentStatus !== 'PAID') {
-        await this.prisma.$transaction(async (tx) => {
-          const category = await tx.ticketCategory.findUnique({ where: { id: existing.categoryId! } });
-          if (!category || category.sold >= category.quantity) throw new BadRequestException('Biglietti esauriti');
-          await tx.ticketCategory.update({ where: { id: existing.categoryId! }, data: { sold: { increment: 1 } } });
-          await tx.ticket.update({ where: { id: existing.id }, data: { code: `VF-${new Date().getFullYear()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`, paymentStatus: 'PAID', stripePaymentIntentId: typeof session.payment_intent === 'string' ? session.payment_intent : null } });
-        });
-      }
-      return existing.id;
-    }
-    const ticket = await this.prisma.$transaction(async (tx) => {
-      const category = await tx.ticketCategory.findUnique({ where: { id: categoryId } });
-      if (!category || category.sold >= category.quantity) throw new BadRequestException('Biglietti esauriti');
-      await tx.ticketCategory.update({ where: { id: categoryId }, data: { sold: { increment: 1 } } });
-      return tx.ticket.create({ data: { code: `VF-${new Date().getFullYear()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`, type: category.type, price: category.price, festivalId, categoryId, userId, paymentStatus: 'PAID', stripeCheckoutSessionId: session.id, stripePaymentIntentId: typeof session.payment_intent === 'string' ? session.payment_intent : null } });
+  private async fulfillPaidSession(
+  session: Stripe.Checkout.Session,
+  userId: string,
+  festivalId: string,
+  categoryId: string,
+) {
+  const existing =
+    await this.prisma.ticket.findUnique({
+      where: {
+        stripeCheckoutSessionId: session.id,
+      },
     });
-    return ticket.id;
+
+  if (existing) {
+    if (existing.userId !== userId) {
+      throw new BadRequestException(
+        'Sessione di pagamento non associata all’utente',
+      );
+    }
+
+    if (
+      existing.paymentStatus !== 'PAID'
+    ) {
+      await this.prisma.$transaction(
+        async (tx) => {
+          const category =
+            await tx.ticketCategory.findUnique({
+              where: {
+                id: existing.categoryId!,
+              },
+            });
+
+          if (
+            !category ||
+            category.sold >= category.quantity
+          ) {
+            throw new BadRequestException(
+              'Biglietti esauriti',
+            );
+          }
+
+          await tx.ticketCategory.update({
+            where: {
+              id: existing.categoryId!,
+            },
+
+            data: {
+              sold: {
+                increment: 1,
+              },
+            },
+          });
+
+          await tx.ticket.update({
+            where: {
+              id: existing.id,
+            },
+
+            data: {
+              code:
+                `VF-${new Date().getFullYear()}-${Math.random()
+                  .toString(36)
+                  .substring(2, 8)
+                  .toUpperCase()}`,
+
+              paymentStatus: 'PAID',
+
+              stripePaymentIntentId:
+                typeof session.payment_intent ===
+                'string'
+                  ? session.payment_intent
+                  : null,
+            },
+          });
+        },
+      );
+
+      return {
+        ticketId: existing.id,
+        newlyPaid: true,
+      };
+    }
+
+    return {
+      ticketId: existing.id,
+      newlyPaid: false,
+    };
   }
+
+  const ticket =
+    await this.prisma.$transaction(
+      async (tx) => {
+        const category =
+          await tx.ticketCategory.findUnique({
+            where: {
+              id: categoryId,
+            },
+          });
+
+        if (
+          !category ||
+          category.sold >= category.quantity
+        ) {
+          throw new BadRequestException(
+            'Biglietti esauriti',
+          );
+        }
+
+        await tx.ticketCategory.update({
+          where: {
+            id: categoryId,
+          },
+
+          data: {
+            sold: {
+              increment: 1,
+            },
+          },
+        });
+
+        return tx.ticket.create({
+          data: {
+            code:
+              `VF-${new Date().getFullYear()}-${Math.random()
+                .toString(36)
+                .substring(2, 8)
+                .toUpperCase()}`,
+
+            type: category.type,
+
+            price: category.price,
+
+            festivalId,
+
+            categoryId,
+
+            userId,
+
+            paymentStatus: 'PAID',
+
+            stripeCheckoutSessionId:
+              session.id,
+
+            stripePaymentIntentId:
+              typeof session.payment_intent ===
+              'string'
+                ? session.payment_intent
+                : null,
+          },
+        });
+      },
+    );
+
+  return {
+    ticketId: ticket.id,
+    newlyPaid: true,
+  };
+}
 
   async handleWebhook(rawBody: Buffer, signature: string) {
     this.ensureConfigured();
@@ -130,7 +267,33 @@ export class StripeService {
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object as Stripe.Checkout.Session;
       const { categoryId, festivalId, userId } = session.metadata || {};
-      if (categoryId && festivalId && userId && session.payment_status === 'paid') await this.fulfillPaidSession(session, userId, festivalId, categoryId);
+      if (
+  categoryId &&
+  festivalId &&
+  userId &&
+  session.payment_status === 'paid'
+) {
+  const result =
+    await this.fulfillPaidSession(
+      session,
+      userId,
+      festivalId,
+      categoryId,
+    );
+
+  if (result.newlyPaid) {
+    try {
+      await this.ticketMailService.sendTicketEmail(
+        result.ticketId,
+      );
+    } catch (error) {
+      console.error(
+        'Errore invio email ticket:',
+        error,
+      );
+    }
+  }
+}
     }
     return { received: true };
   }
@@ -143,8 +306,31 @@ export class StripeService {
     const session = await this.client.checkout.sessions.retrieve(sessionId, {}, { stripeAccount: stripeAccountId });
     if (session.payment_status !== 'paid') throw new BadRequestException('Il pagamento non risulta completato');
     const metadata = session.metadata || {};
-    const ticketId = await this.fulfillPaidSession(session, userId, metadata.festivalId || '', metadata.categoryId || '');
-    return { paid: true, ticketId };
+    const result =
+  await this.fulfillPaidSession(
+    session,
+    userId,
+    metadata.festivalId || '',
+    metadata.categoryId || '',
+  );
+
+if (result.newlyPaid) {
+  try {
+    await this.ticketMailService.sendTicketEmail(
+      result.ticketId,
+    );
+  } catch (error) {
+    console.error(
+      'Errore invio email ticket:',
+      error,
+    );
+  }
+}
+
+return {
+  paid: true,
+  ticketId: result.ticketId,
+};
   }
 
   async reconcilePendingTickets(userId: string) {
