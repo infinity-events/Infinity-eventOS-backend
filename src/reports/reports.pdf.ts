@@ -6,143 +6,1251 @@ type Report = {
   festivalLocation?: string | null;
   period?: string;
   generatedAt?: string;
-  ticketsSold: number;
-  activatedWristbands: number;
-  inactiveWristbands: number;
-  revenue: number;
-  entrances?: number;
-  ticketBreakdown?: { name: string; type: string; quantity: number; revenue: number }[];
+
+  participants: {
+    total: number;
+    inside: number;
+    outside: number;
+  };
+
+  tickets: {
+    sold: number;
+    revenue: number;
+    averagePrice: number;
+    entryRate: number;
+    breakdown: {
+      name: string;
+      type: string;
+      quantity: number;
+      revenue: number;
+    }[];
+  };
+
+  entrances: {
+    total: number;
+    uniqueParticipants: number;
+    timeline: {
+      time: string;
+      value: number;
+    }[];
+    peak: {
+      value: number;
+      time: string | null;
+    };
+  };
+
+  wristbands: {
+    total: number;
+    activated: number;
+    inactive: number;
+    activationPercentage: number;
+  };
+
+  pos: {
+    revenue: number;
+    transactions: number;
+    productsSold: number;
+    timeline: {
+      time: string;
+      value: number;
+    }[];
+    topProducts: {
+      productId: string;
+      name: string;
+      quantity: number;
+      revenue: number;
+    }[];
+    paymentMethods: {
+      method: string;
+      transactions: number;
+      revenue: number;
+    }[];
+  };
+
+  wallet: {
+    topups: number;
+    spent: number;
+    refunds: number;
+    averageSpend: number;
+  };
+
+  event: {
+    ticketRevenue: number;
+    posRevenue: number;
+    totalRevenue: number;
+  };
 };
 
 @Injectable()
 export class ReportsPdfService {
-  async generate(data: Report[]): Promise<{ buffer: Buffer; fileName: string }> {
-    const doc = new PDFDocument({ size: 'A4', margin: 0, info: { Title: 'Infinity EventOS - Report Analytics' } });
+  async generate(
+    data: Report[],
+  ): Promise<{
+    buffer: Buffer;
+    fileName: string;
+  }> {
+    const doc = new PDFDocument({
+      size: 'A4',
+      margin: 42,
+      info: {
+        Title:
+          'Infinity EventOS - Report Analytics',
+        Author: 'Infinity EventOS',
+      },
+    });
+
     const chunks: Uint8Array[] = [];
-    doc.on('data', chunk => chunks.push(chunk));
-    const pdfFinished = new Promise<Buffer>(resolve => doc.on('end', () => resolve(Buffer.concat(chunks))));
+
+    doc.on('data', (chunk) =>
+      chunks.push(chunk),
+    );
+
+    const pdfFinished = new Promise<Buffer>(
+      (resolve) =>
+        doc.on('end', () =>
+          resolve(Buffer.concat(chunks)),
+        ),
+    );
 
     data.forEach((report, index) => {
-      if (index > 0) doc.addPage({ size: 'A4', margin: 0 });
+      if (index > 0) {
+        doc.addPage();
+      }
+
       this.renderReport(doc, report);
     });
 
     doc.end();
-    return { buffer: await pdfFinished, fileName: 'report-' + Date.now() + '.pdf' };
+
+    return {
+      buffer: await pdfFinished,
+      fileName:
+        'infinity-eventos-report-' +
+        Date.now() +
+        '.pdf',
+    };
   }
 
-  private renderReport(doc: PDFKit.PDFDocument, report: Report) {
-    const pageWidth = doc.page.width;
-    const pageHeight = doc.page.height;
-    const margin = 42;
-    const contentWidth = pageWidth - margin * 2;
-    const navy = '#111827';
-    const purple = '#8B5CF6';
-    const purpleDark = '#6D28D9';
-    const muted = '#64748B';
-    const green = '#10B981';
-    const amber = '#F59E0B';
+  private renderReport(
+    doc: PDFKit.PDFDocument,
+    report: Report,
+  ) {
+    this.renderHeader(doc, report);
 
-    doc.rect(0, 0, pageWidth, pageHeight).fill('#FFFFFF');
-    doc.rect(0, 0, pageWidth, 148).fill(navy);
-    doc.rect(0, 144, pageWidth, 4).fill(purple);
-    doc.fillColor('#FFFFFF').font('Helvetica-Bold').fontSize(23).text('Infinity EventOS', margin, 35);
-    doc.fillColor('#C4B5FD').font('Helvetica-Bold').fontSize(9).text('WEEKLY EVENT REPORT', margin, 70, { characterSpacing: 1.4 });
-    doc.fillColor('#FFFFFF').font('Helvetica-Bold').fontSize(18).text(report.festival, margin, 94, { width: contentWidth * 0.62 });
-    doc.fillColor('#CBD5E1').font('Helvetica').fontSize(9).text(report.festivalLocation || 'Festival location not set', margin, 121);
-    doc.text('Generated ' + formatDate(report.generatedAt), pageWidth - margin - 170, 121, { width: 170, align: 'right' });
+    let y = 175;
 
-    const cardY = 175;
-    const cardGap = 10;
-    const cardWidth = (contentWidth - cardGap * 3) / 4;
+    // =========================================================
+    // OVERVIEW
+    // =========================================================
+
+    this.sectionTitle(
+      doc,
+      'Event overview',
+      'Riepilogo generale dell’evento',
+      42,
+      y,
+    );
+
+    y += 34;
+
     const cards = [
-      { label: 'TICKETS', value: String(report.ticketsSold), color: purple },
-      { label: 'REVENUE', value: formatCurrency(report.revenue), color: green },
-      { label: 'WRISTBANDS', value: String(report.activatedWristbands), color: '#38BDF8' },
-      { label: 'ENTRIES', value: String(report.entrances || 0), color: amber },
+      {
+        label: 'PARTECIPANTI',
+        value: String(
+          report.participants.total,
+        ),
+      },
+      {
+        label: 'DENTRO',
+        value: String(
+          report.participants.inside,
+        ),
+      },
+      {
+        label: 'FUORI',
+        value: String(
+          report.participants.outside,
+        ),
+      },
+      {
+        label: 'INGRESSI',
+        value: String(
+          report.entrances.total,
+        ),
+      },
     ];
 
-    cards.forEach((card, index) => {
-      const x = margin + (cardWidth + cardGap) * index;
-      doc.roundedRect(x, cardY, cardWidth, 82, 10).fill('#FFFFFF').stroke('#E2E8F0');
-      doc.roundedRect(x, cardY, 5, 82, 3).fill(card.color);
-      doc.fillColor(muted).font('Helvetica-Bold').fontSize(7).text(card.label, x + 15, cardY + 16);
-      doc.fillColor(navy).font('Helvetica-Bold').fontSize(index === 1 ? 11 : 22).text(card.value, x + 15, cardY + 39, { width: cardWidth - 22 });
-    });
+    this.drawCards(
+      doc,
+      cards,
+      42,
+      y,
+    );
 
-    let y = 288;
-    this.sectionTitle(doc, 'Ticket performance', 'Sales mix and revenue by category', margin, y, purpleDark);
-    y += 34;
-    const breakdown = report.ticketBreakdown && report.ticketBreakdown.length
-      ? report.ticketBreakdown
-      : [{ name: 'All tickets', type: 'TOTAL', quantity: report.ticketsSold, revenue: report.revenue }];
-    const tableWidth = contentWidth * 0.58;
-    doc.roundedRect(margin, y, tableWidth, 190, 10).fill('#FFFFFF').stroke('#E2E8F0');
-    doc.fillColor(muted).font('Helvetica-Bold').fontSize(8);
-    doc.text('CATEGORY', margin + 16, y + 16);
-    doc.text('QTY', margin + tableWidth - 130, y + 16, { width: 35, align: 'right' });
-    doc.text('REVENUE', margin + tableWidth - 76, y + 16, { width: 60, align: 'right' });
-    doc.moveTo(margin + 16, y + 35).lineTo(margin + tableWidth - 16, y + 35).stroke('#E2E8F0');
-    breakdown.slice(0, 6).forEach((item, index) => {
-      const rowY = y + 50 + index * 22;
-      if (index % 2 === 0) doc.rect(margin + 8, rowY - 5, tableWidth - 16, 22).fill('#F8FAFC');
-      doc.fillColor(navy).font('Helvetica').fontSize(9).text(item.name || item.type, margin + 16, rowY);
-      doc.text(String(item.quantity), margin + tableWidth - 130, rowY, { width: 35, align: 'right' });
-      doc.fillColor(navy).font('Helvetica').fontSize(7).text(formatCompactCurrency(item.revenue), margin + tableWidth - 76, rowY + 1, { width: 60, align: 'right' });
-    });
-    doc.fillColor(muted).font('Helvetica').fontSize(8).text(report.period || 'Current reporting period', margin + 16, y + 168);
+    y += 94;
 
-    const sideX = margin + tableWidth + 14;
-    const sideWidth = contentWidth - tableWidth - 14;
-    doc.roundedRect(sideX, y, sideWidth, 190, 10).fill('#F8FAFC');
-    doc.fillColor(navy).font('Helvetica-Bold').fontSize(10).text('Wristband status', sideX + 16, y + 17);
-    const wristbandTotal = report.activatedWristbands + report.inactiveWristbands;
-    const activation = wristbandTotal ? Math.round((report.activatedWristbands / wristbandTotal) * 100) : 0;
-    doc.fillColor(muted).font('Helvetica').fontSize(9).text(String(activation) + '% activated', sideX + 16, y + 45);
-    doc.roundedRect(sideX + 16, y + 69, sideWidth - 32, 12, 6).fill('#E2E8F0');
-    if (activation > 0) doc.roundedRect(sideX + 16, y + 69, (sideWidth - 32) * activation / 100, 12, 6).fill(green);
-    this.metricLine(doc, 'Activated', String(report.activatedWristbands), sideX + 16, y + 105, green, sideWidth - 32);
-    this.metricLine(doc, 'Available', String(report.inactiveWristbands), sideX + 16, y + 134, amber, sideWidth - 32);
-
-    y += 225;
-    this.sectionTitle(doc, 'Event snapshot', 'A quick operational readout for your team', margin, y, purpleDark);
-    y += 34;
-    doc.roundedRect(margin, y, contentWidth, 92, 10).fill(navy);
-    const snapshot = [
-      ['Ticket revenue', formatCurrency(report.revenue)],
-      ['Average ticket', report.ticketsSold ? formatCurrency(report.revenue / report.ticketsSold) : 'EUR 0.00'],
-      ['Entry rate', report.ticketsSold ? Math.round(((report.entrances || 0) / report.ticketsSold) * 100) + '%' : '0%'],
+    const revenueCards = [
+      {
+        label: 'TICKET',
+        value: formatCurrency(
+          report.event.ticketRevenue,
+        ),
+      },
+      {
+        label: 'POS',
+        value: formatCurrency(
+          report.event.posRevenue,
+        ),
+      },
+      {
+        label: 'TOTALE',
+        value: formatCurrency(
+          report.event.totalRevenue,
+        ),
+      },
+      {
+        label: 'PRODOTTI',
+        value: String(
+          report.pos.productsSold,
+        ),
+      },
     ];
-    snapshot.forEach((item, index) => {
-      const x = margin + 18 + index * (contentWidth / 3);
-      doc.fillColor('#94A3B8').font('Helvetica-Bold').fontSize(8).text(item[0].toUpperCase(), x, y + 20);
-      doc.fillColor('#FFFFFF').font('Helvetica-Bold').fontSize(17).text(item[1], x, y + 43);
-    });
 
-    doc.fillColor('#94A3B8').font('Helvetica').fontSize(8).text('Infinity EventOS  |  Confidential analytics report', margin, pageHeight - 35);
-    doc.text('Page 1', pageWidth - margin - 50, pageHeight - 35, { width: 50, align: 'right' });
+    this.drawCards(
+      doc,
+      revenueCards,
+      42,
+      y,
+    );
+
+    // =========================================================
+    // ENTRANCES
+    // =========================================================
+
+    y += 115;
+
+    this.sectionTitle(
+      doc,
+      'Entrances',
+      'Andamento degli accessi al festival',
+      42,
+      y,
+    );
+
+    y += 34;
+
+    this.drawInfoBox(
+      doc,
+      42,
+      y,
+      511,
+      80,
+      [
+        [
+          'Ingressi totali',
+          String(
+            report.entrances.total,
+          ),
+        ],
+        [
+          'Partecipanti dentro',
+          String(
+            report.entrances
+              .uniqueParticipants,
+          ),
+        ],
+        [
+          'Entry rate',
+          `${report.tickets.entryRate}%`,
+        ],
+        [
+          'Picco',
+          report.entrances.peak.time
+            ? `${report.entrances.peak.value} alle ${report.entrances.peak.time}`
+            : 'N/D',
+        ],
+      ],
+    );
+
+    y += 100;
+
+    this.drawTimelineTable(
+      doc,
+      'Andamento ingressi',
+      report.entrances.timeline,
+      42,
+      y,
+      'Ingressi',
+    );
+
+    // =========================================================
+    // TICKETS
+    // =========================================================
+
+    doc.addPage();
+
+    this.renderHeader(
+      doc,
+      report,
+      'Ticket & wristbands',
+    );
+
+    y = 175;
+
+    this.sectionTitle(
+      doc,
+      'Ticket performance',
+      'Vendite e ricavi per categoria',
+      42,
+      y,
+    );
+
+    y += 34;
+
+    this.drawTable(
+      doc,
+      [
+        'CATEGORIA',
+        'QTA',
+        'RICAVO',
+      ],
+      report.tickets.breakdown.map(
+        (item) => [
+          item.name,
+          String(item.quantity),
+          formatCurrency(item.revenue),
+        ],
+      ),
+      42,
+      y,
+      [280, 70, 150],
+    );
+
+    y +=
+      70 +
+      Math.max(
+        report.tickets.breakdown.length,
+        1,
+      ) *
+        25;
+
+    y += 25;
+
+    this.drawInfoBox(
+      doc,
+      42,
+      y,
+      511,
+      95,
+      [
+        [
+          'Ticket venduti',
+          String(
+            report.tickets.sold,
+          ),
+        ],
+        [
+          'Incasso ticket',
+          formatCurrency(
+            report.tickets.revenue,
+          ),
+        ],
+        [
+          'Prezzo medio',
+          formatCurrency(
+            report.tickets.averagePrice,
+          ),
+        ],
+        [
+          'Entry rate',
+          `${report.tickets.entryRate}%`,
+        ],
+      ],
+    );
+
+    y += 125;
+
+    this.sectionTitle(
+      doc,
+      'Wristbands',
+      'Stato di attivazione dei braccialetti',
+      42,
+      y,
+    );
+
+    y += 35;
+
+    this.drawProgress(
+      doc,
+      42,
+      y,
+      511,
+      report.wristbands
+        .activationPercentage,
+    );
+
+    y += 55;
+
+    this.drawTable(
+      doc,
+      [
+        'STATO',
+        'QUANTITÀ',
+        'PERCENTUALE',
+      ],
+      [
+        [
+          'Attivati',
+          String(
+            report.wristbands.activated,
+          ),
+          `${report.wristbands.activationPercentage}%`,
+        ],
+        [
+          'Non attivati',
+          String(
+            report.wristbands.inactive,
+          ),
+          `${Math.max(
+            100 -
+              report.wristbands
+                .activationPercentage,
+            0,
+          )}%`,
+        ],
+      ],
+      42,
+      y,
+      [280, 110, 110],
+    );
+
+    // =========================================================
+    // POS
+    // =========================================================
+
+    doc.addPage();
+
+    this.renderHeader(
+      doc,
+      report,
+      'POS & revenue',
+    );
+
+    y = 175;
+
+    this.sectionTitle(
+      doc,
+      'POS performance',
+      'Vendite e incassi del punto vendita',
+      42,
+      y,
+    );
+
+    y += 34;
+
+    this.drawInfoBox(
+      doc,
+      42,
+      y,
+      511,
+      80,
+      [
+        [
+          'Incasso POS',
+          formatCurrency(
+            report.pos.revenue,
+          ),
+        ],
+        [
+          'Transazioni',
+          String(
+            report.pos.transactions,
+          ),
+        ],
+        [
+          'Prodotti venduti',
+          String(
+            report.pos.productsSold,
+          ),
+        ],
+        [
+          'Media transazione',
+          formatCurrency(
+            report.pos.transactions
+              ? report.pos.revenue /
+                  report.pos.transactions
+              : 0,
+          ),
+        ],
+      ],
+    );
+
+    y += 105;
+
+    this.sectionTitle(
+      doc,
+      'Top products',
+      'Prodotti più venduti',
+      42,
+      y,
+    );
+
+    y += 34;
+
+    this.drawTable(
+      doc,
+      [
+        'PRODOTTO',
+        'QTA',
+        'RICAVO',
+      ],
+      report.pos.topProducts.map(
+        (item) => [
+          item.name,
+          String(item.quantity),
+          formatCurrency(item.revenue),
+        ],
+      ),
+      42,
+      y,
+      [280, 70, 150],
+    );
+
+    y +=
+      70 +
+      Math.max(
+        report.pos.topProducts.length,
+        1,
+      ) *
+        25;
+
+    y += 25;
+
+    this.sectionTitle(
+      doc,
+      'Payment methods',
+      'Incassi suddivisi per metodo di pagamento',
+      42,
+      y,
+    );
+
+    y += 34;
+
+    this.drawTable(
+      doc,
+      [
+        'METODO',
+        'TRANSAZIONI',
+        'RICAVO',
+      ],
+      report.pos.paymentMethods.map(
+        (item) => [
+          item.method,
+          String(item.transactions),
+          formatCurrency(item.revenue),
+        ],
+      ),
+      42,
+      y,
+      [220, 130, 150],
+    );
+
+    // =========================================================
+    // WALLET + FINAL
+    // =========================================================
+
+    doc.addPage();
+
+    this.renderHeader(
+      doc,
+      report,
+      'Financial summary',
+    );
+
+    y = 175;
+
+    this.sectionTitle(
+      doc,
+      'Wallet',
+      'Movimenti economici dei wallet partecipanti',
+      42,
+      y,
+    );
+
+    y += 34;
+
+    this.drawInfoBox(
+      doc,
+      42,
+      y,
+      511,
+      100,
+      [
+        [
+          'Ricariche',
+          formatCurrency(
+            report.wallet.topups,
+          ),
+        ],
+        [
+          'Spesa',
+          formatCurrency(
+            report.wallet.spent,
+          ),
+        ],
+        [
+          'Rimborsi',
+          formatCurrency(
+            report.wallet.refunds,
+          ),
+        ],
+        [
+          'Media spesa',
+          formatCurrency(
+            report.wallet.averageSpend,
+          ),
+        ],
+      ],
+    );
+
+    y += 135;
+
+    this.sectionTitle(
+      doc,
+      'Final financial summary',
+      'Riepilogo economico dell’evento',
+      42,
+      y,
+    );
+
+    y += 34;
+
+    this.drawLargeRevenueBox(
+      doc,
+      42,
+      y,
+      511,
+      145,
+      report,
+    );
+
+    y += 180;
+
+    this.sectionTitle(
+      doc,
+      'Key metrics',
+      'Indicatori principali',
+      42,
+      y,
+    );
+
+    y += 34;
+
+    this.drawTable(
+      doc,
+      [
+        'INDICATORE',
+        'VALORE',
+      ],
+      [
+        [
+          'Partecipanti totali',
+          String(
+            report.participants.total,
+          ),
+        ],
+        [
+          'Partecipanti dentro',
+          String(
+            report.participants.inside,
+          ),
+        ],
+        [
+          'Partecipanti fuori',
+          String(
+            report.participants.outside,
+          ),
+        ],
+        [
+          'Ticket venduti',
+          String(
+            report.tickets.sold,
+          ),
+        ],
+        [
+          'Incasso ticket',
+          formatCurrency(
+            report.event.ticketRevenue,
+          ),
+        ],
+        [
+          'Incasso POS',
+          formatCurrency(
+            report.event.posRevenue,
+          ),
+        ],
+        [
+          'Incasso totale',
+          formatCurrency(
+            report.event.totalRevenue,
+          ),
+        ],
+        [
+          'Attivazione braccialetti',
+          `${report.wristbands.activationPercentage}%`,
+        ],
+        [
+          'Picco ingressi',
+          report.entrances.peak.time
+            ? `${report.entrances.peak.value} alle ${report.entrances.peak.time}`
+            : 'N/D',
+        ],
+      ],
+      42,
+      y,
+      [350, 160],
+    );
+
+    this.renderFooter(doc, report);
   }
 
-  private sectionTitle(doc: PDFKit.PDFDocument, title: string, subtitle: string, x: number, y: number, color: string) {
-    doc.fillColor(color).font('Helvetica-Bold').fontSize(15).text(title, x, y);
-    doc.fillColor('#94A3B8').font('Helvetica').fontSize(8).text(subtitle, x, y + 20);
+  private renderHeader(
+    doc: PDFKit.PDFDocument,
+    report: Report,
+    subtitle?: string,
+  ) {
+    const pageWidth = doc.page.width;
+
+    doc
+      .rect(
+        0,
+        0,
+        pageWidth,
+        130,
+      )
+      .fill('#111827');
+
+    doc
+      .rect(
+        0,
+        126,
+        pageWidth,
+        4,
+      )
+      .fill('#8B5CF6');
+
+    doc
+      .fillColor('#FFFFFF')
+      .font('Helvetica-Bold')
+      .fontSize(22)
+      .text(
+        'Infinity EventOS',
+        42,
+        28,
+      );
+
+    doc
+      .fillColor('#C4B5FD')
+      .font('Helvetica-Bold')
+      .fontSize(8)
+      .text(
+        'EVENT ANALYTICS REPORT',
+        42,
+        61,
+        {
+          characterSpacing: 1.3,
+        },
+      );
+
+    doc
+      .fillColor('#FFFFFF')
+      .font('Helvetica-Bold')
+      .fontSize(16)
+      .text(
+        report.festival,
+        42,
+        80,
+        {
+          width: 320,
+        },
+      );
+
+    doc
+      .fillColor('#CBD5E1')
+      .font('Helvetica')
+      .fontSize(8)
+      .text(
+        subtitle ||
+          report.festivalLocation ||
+          'Festival',
+        42,
+        105,
+      );
+
+    doc
+      .fillColor('#CBD5E1')
+      .font('Helvetica')
+      .fontSize(8)
+      .text(
+        formatDate(report.generatedAt),
+        pageWidth - 180,
+        105,
+        {
+          width: 138,
+          align: 'right',
+        },
+      );
   }
 
-  private metricLine(doc: PDFKit.PDFDocument, label: string, value: string, x: number, y: number, color: string, width: number) {
-    doc.circle(x + 4, y + 5, 4).fill(color);
-    doc.fillColor('#334155').font('Helvetica').fontSize(9).text(label, x + 14, y);
-    doc.fillColor('#0F172A').font('Helvetica-Bold').fontSize(9).text(value, x + width - 45, y, { width: 45, align: 'right' });
+  private sectionTitle(
+    doc: PDFKit.PDFDocument,
+    title: string,
+    subtitle: string,
+    x: number,
+    y: number,
+  ) {
+    doc
+      .fillColor('#6D28D9')
+      .font('Helvetica-Bold')
+      .fontSize(15)
+      .text(title, x, y);
+
+    doc
+      .fillColor('#64748B')
+      .font('Helvetica')
+      .fontSize(8)
+      .text(
+        subtitle,
+        x,
+        y + 20,
+      );
+  }
+
+  private drawCards(
+    doc: PDFKit.PDFDocument,
+    cards: {
+      label: string;
+      value: string;
+    }[],
+    x: number,
+    y: number,
+  ) {
+    const width = 511;
+    const gap = 10;
+    const cardWidth =
+      (width - gap * 3) / 4;
+
+    cards.forEach(
+      (card, index) => {
+        const cardX =
+          x +
+          index *
+            (cardWidth + gap);
+
+        doc
+          .roundedRect(
+            cardX,
+            y,
+            cardWidth,
+            82,
+            10,
+          )
+          .fill('#FFFFFF')
+          .stroke('#E2E8F0');
+
+        doc
+          .fillColor('#64748B')
+          .font('Helvetica-Bold')
+          .fontSize(7)
+          .text(
+            card.label,
+            cardX + 14,
+            y + 15,
+          );
+
+        doc
+          .fillColor('#111827')
+          .font('Helvetica-Bold')
+          .fontSize(17)
+          .text(
+            card.value,
+            cardX + 14,
+            y + 39,
+            {
+              width:
+                cardWidth - 20,
+            },
+          );
+      },
+    );
+  }
+
+  private drawInfoBox(
+    doc: PDFKit.PDFDocument,
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    items: [string, string][],
+  ) {
+    doc
+      .roundedRect(
+        x,
+        y,
+        width,
+        height,
+        10,
+      )
+      .fill('#F8FAFC')
+      .stroke('#E2E8F0');
+
+    const columnWidth =
+      width / items.length;
+
+    items.forEach(
+      (item, index) => {
+        const itemX =
+          x +
+          index * columnWidth +
+          16;
+
+        doc
+          .fillColor('#64748B')
+          .font('Helvetica-Bold')
+          .fontSize(7)
+          .text(
+            item[0].toUpperCase(),
+            itemX,
+            y + 22,
+            {
+              width:
+                columnWidth - 24,
+            },
+          );
+
+        doc
+          .fillColor('#111827')
+          .font('Helvetica-Bold')
+          .fontSize(12)
+          .text(
+            item[1],
+            itemX,
+            y + 45,
+            {
+              width:
+                columnWidth - 24,
+            },
+          );
+      },
+    );
+  }
+
+  private drawTable(
+    doc: PDFKit.PDFDocument,
+    headers: string[],
+    rows: string[][],
+    x: number,
+    y: number,
+    widths: number[],
+  ) {
+    const rowHeight = 25;
+    const headerHeight = 32;
+
+    let currentY = y;
+
+    doc
+      .roundedRect(
+        x,
+        y,
+        widths.reduce(
+          (a, b) => a + b,
+          0,
+        ),
+        headerHeight +
+          Math.max(rows.length, 1) *
+            rowHeight +
+          12,
+        10,
+      )
+      .fill('#FFFFFF')
+      .stroke('#E2E8F0');
+
+    let currentX = x + 12;
+
+    headers.forEach(
+      (header, index) => {
+        doc
+          .fillColor('#64748B')
+          .font('Helvetica-Bold')
+          .fontSize(7)
+          .text(
+            header,
+            currentX,
+            currentY + 13,
+            {
+              width:
+                widths[index] - 12,
+            },
+          );
+
+        currentX +=
+          widths[index];
+      },
+    );
+
+    currentY +=
+      headerHeight;
+
+    doc
+      .moveTo(x + 12, currentY)
+      .lineTo(
+        x +
+          widths.reduce(
+            (a, b) => a + b,
+            0,
+          ) -
+          12,
+        currentY,
+      )
+      .stroke('#E2E8F0');
+
+    rows.forEach(
+      (row, rowIndex) => {
+        if (rowIndex % 2 === 0) {
+          doc
+            .rect(
+              x + 8,
+              currentY,
+              widths.reduce(
+                (a, b) => a + b,
+                0,
+              ) - 16,
+              rowHeight,
+            )
+            .fill('#F8FAFC');
+        }
+
+        currentX = x + 12;
+
+        row.forEach(
+          (cell, index) => {
+            doc
+              .fillColor('#111827')
+              .font(
+                index === 0
+                  ? 'Helvetica'
+                  : 'Helvetica-Bold',
+              )
+              .fontSize(8)
+              .text(
+                cell,
+                currentX,
+                currentY + 8,
+                {
+                  width:
+                    widths[index] -
+                    12,
+                },
+              );
+
+            currentX +=
+              widths[index];
+          },
+        );
+
+        currentY +=
+          rowHeight;
+      },
+    );
+  }
+
+  private drawTimelineTable(
+    doc: PDFKit.PDFDocument,
+    title: string,
+    timeline: {
+      time: string;
+      value: number;
+    }[],
+    x: number,
+    y: number,
+    label: string,
+  ) {
+    this.sectionTitle(
+      doc,
+      title,
+      'Ingressi registrati nel tempo',
+      x,
+      y,
+    );
+
+    const rows = timeline
+      .slice(-12)
+      .map((item) => [
+        item.time,
+        String(item.value),
+      ]);
+
+    this.drawTable(
+      doc,
+      ['ORARIO', label.toUpperCase()],
+      rows.length
+        ? rows
+        : [['N/D', '0']],
+      x,
+      y + 34,
+      [350, 160],
+    );
+  }
+
+  private drawProgress(
+    doc: PDFKit.PDFDocument,
+    x: number,
+    y: number,
+    width: number,
+    percentage: number,
+  ) {
+    doc
+      .roundedRect(
+        x,
+        y,
+        width,
+        14,
+        7,
+      )
+      .fill('#E2E8F0');
+
+    if (percentage > 0) {
+      doc
+        .roundedRect(
+          x,
+          y,
+          width *
+            Math.min(
+              percentage,
+              100,
+            ) /
+            100,
+          14,
+          7,
+        )
+        .fill('#10B981');
+    }
+
+    doc
+      .fillColor('#334155')
+      .font('Helvetica-Bold')
+      .fontSize(9)
+      .text(
+        `${percentage}% attivati`,
+        x,
+        y + 24,
+      );
+  }
+
+  private drawLargeRevenueBox(
+    doc: PDFKit.PDFDocument,
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    report: Report,
+  ) {
+    doc
+      .roundedRect(
+        x,
+        y,
+        width,
+        height,
+        12,
+      )
+      .fill('#111827');
+
+    doc
+      .fillColor('#94A3B8')
+      .font('Helvetica-Bold')
+      .fontSize(8)
+      .text(
+        'INCASSO TOTALE',
+        x + 24,
+        y + 22,
+      );
+
+    doc
+      .fillColor('#FFFFFF')
+      .font('Helvetica-Bold')
+      .fontSize(28)
+      .text(
+        formatCurrency(
+          report.event.totalRevenue,
+        ),
+        x + 24,
+        y + 48,
+      );
+
+    doc
+      .fillColor('#CBD5E1')
+      .font('Helvetica')
+      .fontSize(9)
+      .text(
+        `Ticket ${formatCurrency(
+          report.event.ticketRevenue,
+        )}   •   POS ${formatCurrency(
+          report.event.posRevenue,
+        )}`,
+        x + 24,
+        y + 94,
+      );
+  }
+
+  private renderFooter(
+    doc: PDFKit.PDFDocument,
+    report: Report,
+  ) {
+    const pageHeight =
+      doc.page.height;
+    const pageWidth =
+      doc.page.width;
+
+    doc
+      .fillColor('#94A3B8')
+      .font('Helvetica')
+      .fontSize(7)
+      .text(
+        `Infinity EventOS  |  ${report.festival}  |  Report analytics`,
+        42,
+        pageHeight - 30,
+      );
+
+    doc
+      .text(
+        'Confidential',
+        pageWidth - 110,
+        pageHeight - 30,
+        {
+          width: 68,
+          align: 'right',
+        },
+      );
   }
 }
 
-function formatCurrency(value: number) {
-  return 'EUR ' + Number(value || 0).toFixed(2);
+function formatCurrency(
+  value: number,
+) {
+  return (
+    'EUR ' +
+    Number(value || 0).toFixed(2)
+  );
 }
 
-function formatCompactCurrency(value: number) {
-  return 'EUR ' + Number(value || 0).toFixed(0);
-}
-
-function formatDate(value?: string) {
-  return value ? new Date(value).toLocaleDateString('it-IT') : new Date().toLocaleDateString('it-IT');
+function formatDate(
+  value?: string,
+) {
+  return value
+    ? new Date(
+        value,
+      ).toLocaleDateString('it-IT')
+    : new Date().toLocaleDateString(
+        'it-IT',
+      );
 }
