@@ -487,20 +487,24 @@ export class ReportsService {
   }
 
   async generateWeeklyReports() {
-    const festivals =
-      await this.prisma.festival.findMany();
+  const festivals =
+    await this.prisma.festival.findMany();
 
-    const results = [];
+  const results: Awaited<
+    ReturnType<
+      ReportsService['generateFestivalReport']
+    >
+  >[] = [];
 
-    for (const festival of festivals) {
-      const report =
-        await this.generateFestivalReport(
-          festival.id,
-        );
+  for (const festival of festivals) {
+    const report =
+      await this.generateFestivalReport(
+        festival.id,
+      );
 
-      results.push(report);
-    }
-
-    return results;
+    results.push(report);
   }
+
+  return results;
+}
 }
