@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Post,
@@ -132,4 +133,17 @@ export class InventoryController {
   getMovements() {
     return this.inventoryService.getMovements();
   }
+
+// ============================================================
+  // DELETE
+  // ============================================================
+
+  @Delete('assets/:assetCode')
+    deleteAsset(
+    @Param('assetCode') assetCode: string,
+    ) {
+        return this.inventoryService.deleteAsset(
+            assetCode,
+        );
+    }
 }

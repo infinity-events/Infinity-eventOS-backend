@@ -113,6 +113,54 @@ export class InventoryService {
     return asset;
   }
 
+  async deleteAsset(assetCode: string) {
+  const asset =
+    await this.prisma.inventoryAsset.findUnique({
+      where: {
+        assetCode,
+      },
+      include: {
+        rentalItems: true,
+        movements: true,
+      },
+    });
+
+  if (!asset) {
+    throw new NotFoundException(
+      'Asset non trovato',
+    );
+  }
+
+  if (asset.status === 'RENTED') {
+    throw new BadRequestException(
+      'Non puoi eliminare un asset attualmente noleggiato.',
+    );
+  }
+
+  if (asset.rentalItems.length > 0) {
+    throw new BadRequestException(
+      'Non puoi eliminare un asset con uno storico di noleggi.',
+    );
+  }
+
+  if (asset.movements.length > 0) {
+    throw new BadRequestException(
+      'Non puoi eliminare un asset con uno storico di movimenti.',
+    );
+  }
+
+  await this.prisma.inventoryAsset.delete({
+    where: {
+      assetCode,
+    },
+  });
+
+  return {
+    success: true,
+    message: 'Asset eliminato correttamente',
+  };
+}
+
   // ============================================================
   // RENTALS
   // ============================================================
