@@ -218,6 +218,10 @@ model User {
   operatorEntranceLogs EntranceLog[] @relation("OperatorEntrance")
 
   entranceLogs EntranceLog[] @relation("ParticipantEntrance")
+
+  inventoryRentals Rental[] @relation("InventoryRentalOperator")
+
+  inventoryMovements InventoryMovement[] @relation("InventoryMovementOperator")
 }
 
 model EntranceLog {
@@ -413,4 +417,112 @@ model PosTransactionItem {
 
   @@index([transactionId])
   @@index([productId])
+}
+
+enum InventoryAssetStatus {
+  AVAILABLE
+  RENTED
+  MAINTENANCE
+  LOST
+}
+
+enum RentalStatus {
+  ACTIVE
+  RETURNED
+  CANCELLED
+}
+
+enum InventoryMovementType {
+  CREATED
+  RENTED
+  RETURNED
+  MAINTENANCE
+  LOST
+  FOUND
+  ADJUSTMENT
+}
+
+model InventoryAsset {
+  id String @id @default(cuid())
+
+  assetCode String @unique
+  name String
+  description String?
+  category String?
+  serialNumber String?
+
+  status InventoryAssetStatus @default(AVAILABLE)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  rentalItems RentalItem[]
+  movements InventoryMovement[]
+
+  @@index([status])
+  @@index([category])
+}
+
+model Rental {
+  id String @id @default(cuid())
+
+  customerName String
+  customerCompany String?
+  customerEmail String?
+  customerPhone String?
+  notes String?
+
+  status RentalStatus @default(ACTIVE)
+
+  rentedAt DateTime @default(now())
+  expectedReturnAt DateTime?
+  returnedAt DateTime?
+
+  operatorId String?
+  operator User? @relation("InventoryRentalOperator", fields: [operatorId], references: [id])
+
+  items RentalItem[]
+  movements InventoryMovement[]
+
+  @@index([status])
+  @@index([operatorId])
+}
+
+model RentalItem {
+  id String @id @default(cuid())
+
+  rentalId String
+  assetId String
+
+  rental Rental @relation(fields: [rentalId], references: [id], onDelete: Cascade)
+  asset InventoryAsset @relation(fields: [assetId], references: [id])
+
+  returnedAt DateTime?
+
+  @@unique([rentalId, assetId])
+  @@index([assetId])
+}
+
+model InventoryMovement {
+  id String @id @default(cuid())
+
+  assetId String
+  rentalId String?
+
+  type InventoryMovementType
+
+  note String?
+
+  operatorId String?
+  operator User? @relation("InventoryMovementOperator", fields: [operatorId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  asset InventoryAsset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  rental Rental? @relation(fields: [rentalId], references: [id], onDelete: SetNull)
+
+  @@index([assetId])
+  @@index([rentalId])
+  @@index([operatorId])
+  @@index([createdAt])
 }
