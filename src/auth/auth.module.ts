@@ -1,20 +1,24 @@
 import { Module } from '@nestjs/common';
+
 import { FirebaseAdminService } from './firebase-admin.service';
 import { FirebaseAuthGuard } from './firebase-auth.guard';
+import { RolesGuard } from './roles.guard';
+
 import { PrismaModule } from '../prisma/prisma.module';
 
-
 @Module({
-  imports:[
-    PrismaModule
+  imports: [
+    PrismaModule,
   ],
-  providers:[
+  providers: [
     FirebaseAdminService,
-    FirebaseAuthGuard
+    FirebaseAuthGuard,
+    RolesGuard,
   ],
-  exports:[
+  exports: [
     FirebaseAdminService,
-    FirebaseAuthGuard
-  ]
+    FirebaseAuthGuard,
+    RolesGuard,
+  ],
 })
 export class AuthModule {}

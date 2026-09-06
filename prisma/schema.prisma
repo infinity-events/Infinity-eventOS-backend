@@ -272,6 +272,8 @@ enum Role {
   ADMIN
 
   OWNER
+
+  AZIENDA
 }
 
 model Wallet {
