@@ -424,6 +424,7 @@ enum InventoryAssetStatus {
   RENTED
   MAINTENANCE
   LOST
+  DISMISSED
 }
 
 enum RentalStatus {

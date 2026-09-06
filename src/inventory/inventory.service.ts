@@ -23,25 +23,34 @@ export class InventoryService {
   // ============================================================
 
   async getAssets() {
-    return this.prisma.inventoryAsset.findMany({
-      orderBy: {
-        assetCode: 'asc',
+  return this.prisma.inventoryAsset.findMany({
+    where: {
+      status: {
+        not: 'DISMISSED',
       },
-      include: {
-        rentalItems: {
-          where: {
-            returnedAt: null,
-            rental: {
-              status: RentalStatus.ACTIVE,
-            },
-          },
-          include: {
-            rental: true,
+    },
+
+    orderBy: {
+      assetCode: 'asc',
+    },
+
+    include: {
+      rentalItems: {
+        where: {
+          returnedAt: null,
+
+          rental: {
+            status: RentalStatus.ACTIVE,
           },
         },
+
+        include: {
+          rental: true,
+        },
       },
-    });
-  }
+    },
+  });
+}
 
   async getAssetByCode(assetCode: string) {
     const asset = await this.prisma.inventoryAsset.findUnique({
@@ -131,33 +140,52 @@ export class InventoryService {
     );
   }
 
+  // Un asset attualmente noleggiato
+  // non può essere eliminato o dismesso.
   if (asset.status === 'RENTED') {
     throw new BadRequestException(
-      'Non puoi eliminare un asset attualmente noleggiato.',
+      'Non puoi eliminare un asset attualmente noleggiato. Registra prima la restituzione.',
     );
   }
 
-  if (asset.rentalItems.length > 0) {
-    throw new BadRequestException(
-      'Non puoi eliminare un asset con uno storico di noleggi.',
-    );
+  const hasHistory =
+    asset.rentalItems.length > 0 ||
+    asset.movements.length > 0;
+
+  // Se l'asset non ha mai avuto attività,
+  // possiamo eliminarlo definitivamente.
+  if (!hasHistory) {
+    await this.prisma.inventoryAsset.delete({
+      where: {
+        assetCode,
+      },
+    });
+
+    return {
+      success: true,
+      action: 'DELETED',
+      message: 'Asset eliminato definitivamente.',
+    };
   }
 
-  if (asset.movements.length > 0) {
-    throw new BadRequestException(
-      'Non puoi eliminare un asset con uno storico di movimenti.',
-    );
-  }
-
-  await this.prisma.inventoryAsset.delete({
-    where: {
-      assetCode,
-    },
-  });
+  // Se ha uno storico, NON cancelliamo il record.
+  // Lo dismettiamo mantenendo tutta la cronologia.
+  const updated =
+    await this.prisma.inventoryAsset.update({
+      where: {
+        assetCode,
+      },
+      data: {
+        status: 'DISMISSED',
+      },
+    });
 
   return {
     success: true,
-    message: 'Asset eliminato correttamente',
+    action: 'DISMISSED',
+    message:
+      'Asset dismesso. Lo storico è stato conservato.',
+    asset: updated,
   };
 }
 
