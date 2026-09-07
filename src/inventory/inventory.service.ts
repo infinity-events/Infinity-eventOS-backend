@@ -612,4 +612,32 @@ export class InventoryService {
       '0',
     )}`;
   }
+
+  async updateAsset(
+  assetCode: string,
+  data: {
+    name?: string;
+    description?: string;
+    category?: string;
+    serialNumber?: string;
+  },
+) {
+  const asset = await this.prisma.inventoryAsset.findUnique({
+    where: { assetCode },
+  });
+
+  if (!asset) {
+    throw new NotFoundException("Asset non trovato.");
+  }
+
+  return this.prisma.inventoryAsset.update({
+    where: { assetCode },
+    data: {
+      name: data.name?.trim(),
+      description: data.description?.trim() || null,
+      category: data.category?.trim() || null,
+      serialNumber: data.serialNumber?.trim() || null,
+    },
+  });
+}
 }

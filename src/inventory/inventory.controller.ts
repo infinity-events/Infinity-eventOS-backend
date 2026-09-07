@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Param,
+  Patch,
   Post,
   Req,
   UseGuards,
@@ -146,4 +147,20 @@ export class InventoryController {
             assetCode,
         );
     }
+
+
+  @Patch('assets/:assetCode')
+    updateAsset(
+      @Param('assetCode') assetCode: string,
+      @Body()
+      body: {
+        name?: string;
+        description?: string;
+        category?: string;
+        serialNumber?: string;
+      },
+    ) {
+      return this.inventoryService.updateAsset(assetCode, body);
+    }
 }
+
