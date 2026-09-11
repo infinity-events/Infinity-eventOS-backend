@@ -369,10 +369,13 @@ export class AnalyticsService {
       wristbands: {
         total: wristbands.length,
         activated: activatedWristbands,
+        inactive: wristbands.length - activatedWristbands,
         activationPercentage,
       },
 
       event: {
+        ticketRevenue,
+        posRevenue,
         totalRevenue,
       },
     };

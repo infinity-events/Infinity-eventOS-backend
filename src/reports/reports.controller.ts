@@ -106,10 +106,9 @@ export class ReportsController {
     @Param('festivalId') festivalId: string,
     @Body() body: { email: string },
   ) {
-    if (
-      !body?.email ||
-      !body.email.includes('@')
-    ) {
+    const email = body?.email?.trim();
+
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       throw new BadRequestException(
         'Email non valida',
       );
@@ -133,8 +132,7 @@ export class ReportsController {
         id: festivalId,
       },
       data: {
-        reportEmail:
-          body.email.trim(),
+        reportEmail: email,
       },
       select: {
         id: true,

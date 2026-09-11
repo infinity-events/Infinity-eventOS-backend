@@ -1,36 +1,40 @@
-import { Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  InternalServerErrorException,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { Resend } from 'resend';
 
 @Injectable()
 export class ReportsMailService {
-  private readonly resend = new Resend(process.env.RESEND_API_KEY);
-
   async sendReport(
     email: string | null,
     pdf: { buffer: Buffer; fileName: string },
-    report: any,
+    _report: any,
   ) {
-    if (!email) {
-      throw new Error('Email report non configurata');
+    const recipient = email?.trim();
+
+    if (!recipient || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient)) {
+      throw new BadRequestException('Email report non valida');
     }
 
+    const apiKey = process.env.RESEND_API_KEY?.trim();
     const from = process.env.RESEND_FROM_EMAIL;
 
-    if (!from) {
-      throw new Error('RESEND_FROM_EMAIL non configurato');
+    if (!apiKey || !from?.trim()) {
+      throw new InternalServerErrorException(
+        'Servizio email non configurato',
+      );
     }
 
-    const festivalName = report?.festival || 'Infinity EventOS';
+    const resend = new Resend(apiKey);
 
-    const result = await this.resend.emails.send({
-      from,
-      to: email,
-      subject: `Report ${festivalName}`,
-      text: `Report evento ${festivalName}.
-
-Il report completo è disponibile nell'allegato PDF.
-
-Infinity EventOS`,
+    const result = await resend.emails.send({
+      from: from.trim(),
+      to: recipient,
+      subject: 'Event report',
+      text: 'Please see the attached PDF report.',
       attachments: [
         {
           filename: pdf.fileName,
@@ -39,7 +43,11 @@ Infinity EventOS`,
       ],
     });
 
-    console.log('REPORT EMAIL RESULT:', result);
+    if (result.error) {
+      throw new ServiceUnavailableException(
+        'Invio email non riuscito',
+      );
+    }
 
     return result;
   }
